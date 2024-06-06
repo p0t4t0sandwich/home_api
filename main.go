@@ -80,3 +80,10 @@ func (s *APIServer) Run() error {
 		return server.ListenAndServe()
 	}
 }
+
+func main() {
+	server := NewAPIServer("0.0.0.0:8080", false)
+	if err := server.Run(); err != nil {
+		log.Fatal(err)
+	}
+}
