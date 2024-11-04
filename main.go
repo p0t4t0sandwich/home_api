@@ -1,6 +1,7 @@
 package main
 
 import (
+	"home_api/src/api/modules/woolcatalogue"
 	mw "home_api/src/middleware"
 	"home_api/src/routes"
 	"log"
@@ -28,7 +29,7 @@ func NewAPIServer(address string, usingUDS bool) *APIServer {
 
 // ApplyRoutes - Apply the routes to the API server
 func ApplyRoutes(mux *http.ServeMux) *http.ServeMux {
-
+	woolcatalogue.ApplyRoutes(mux)
 	return mux
 }
 
@@ -82,7 +83,7 @@ func (s *APIServer) Run() error {
 }
 
 func main() {
-	server := NewAPIServer("0.0.0.0:8080", false)
+	server := NewAPIServer("0.0.0.0:9080", false)
 	if err := server.Run(); err != nil {
 		log.Fatal(err)
 	}
