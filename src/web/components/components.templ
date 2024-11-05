@@ -1,0 +1,37 @@
+package components
+
+templ HTMXSetup() {
+	<script src="https://unpkg.com/htmx.org@1.9.12"></script>
+}
+
+templ WoolRoot() {
+	<!DOCTYPE html>
+	<html lang="en">
+		<head>
+			<meta charset="UTF-8"/>
+			<title>Wool Catalogue</title>
+			<link rel="stylesheet" href="/public/styles.css"/>
+			@HTMXSetup()
+		</head>
+		<script></script>
+		<body>
+			<!-- This is a dummy frame to prevent the page from reloading when a form is submitted -->
+			<iframe name="dummyframe" id="dummyframe" style="display: none;"></iframe>
+			<p class="flex flex-row justify-center items-center text-lg">Wool Catalogue</p>
+			<div class="flex justify-start bg-pink-300 p-5 w-84 h-96">
+				@Wools()
+			</div>
+		</body>
+	</html>
+}
+
+templ Wools() {
+	<div
+		class="flex flex-col"
+		id="wools"
+		hx-post="/html/wools"
+		hx-trigger="load"
+		hx-target="#wools"
+		hx-swap="outerHTML"
+	></div>
+}

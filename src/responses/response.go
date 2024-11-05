@@ -76,9 +76,21 @@ func Success(w http.ResponseWriter, r *http.Request, message string) {
 	w.Write([]byte(message))
 }
 
+// SucessHTML -- Send a success response as HTML
+func SuccessHTML(w http.ResponseWriter, r *http.Request, html string) {
+	w.Header().Set("Content-Type", "text/html")
+	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(html))
+}
+
 // StructOK -- Send a struct as a success response
 func StructOK[T any](w http.ResponseWriter, r *http.Request, data T) {
 	SendStruct(w, r, http.StatusOK, data)
+}
+
+// StructCreated -- Send a struct as a created response
+func StructCreated[T any](w http.ResponseWriter, r *http.Request, data T) {
+	SendStruct(w, r, http.StatusCreated, data)
 }
 
 // NoContent -- Send a no content response as JSON or XML

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"home_api/src/api/modules/woolcatalogue"
 	mw "home_api/src/middleware"
 	"home_api/src/routes"
@@ -14,27 +15,49 @@ import (
 	"github.com/rs/cors"
 )
 
-type APIServer struct {
-	Address  string
-	UsingUDS bool
+type LogWriter struct {
+	FileName string
 }
 
-// NewAPIServer - Create a new API server
-func NewAPIServer(address string, usingUDS bool) *APIServer {
-	return &APIServer{
-		Address:  address,
-		UsingUDS: usingUDS,
+func NewLogWriter(fileName string) *LogWriter {
+	return &LogWriter{
+		FileName: fileName,
 	}
 }
 
-// ApplyRoutes - Apply the routes to the API server
+func (w *LogWriter) Write(p []byte) (n int, err error) {
+	fmt.Print(string(p))
+	f, err := os.OpenFile(w.FileName, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return 0, err
+	}
+	defer f.Close()
+	return f.Write(p)
+}
+
+type WebServer struct {
+	Address   string
+	UsingUDS  bool
+	LogWriter *LogWriter
+}
+
+// NewWebServer - Create a new Webserver
+func NewWebServer(address string, usingUDS bool) *WebServer {
+	return &WebServer{
+		Address:   address,
+		UsingUDS:  usingUDS,
+		LogWriter: NewLogWriter("./data/latest.log"),
+	}
+}
+
+// ApplyRoutes - Apply the routes to the Webserver
 func ApplyRoutes(mux *http.ServeMux) *http.ServeMux {
 	woolcatalogue.ApplyRoutes(mux)
 	return mux
 }
 
-// Setup - Setup the API server
-func (s *APIServer) Setup() http.Handler {
+// Setup - Setup the Webserver
+func (s *WebServer) Setup() http.Handler {
 	routerStack := routes.CreateStack()
 
 	middlewareStack := mw.CreateStack(
@@ -43,12 +66,13 @@ func (s *APIServer) Setup() http.Handler {
 	)
 
 	router := routerStack(http.NewServeMux())
-	router.Handle("/", http.FileServer(http.Dir("./public")))
+	router = ApplyRoutes(router)
+	router.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
 	return middlewareStack(router)
 }
 
-// Run - Start the API server
-func (s *APIServer) Run() error {
+// Run - Start the Webserver
+func (s *WebServer) Run() error {
 	server := http.Server{
 		Addr:    s.Address,
 		Handler: s.Setup(),
@@ -74,16 +98,17 @@ func (s *APIServer) Run() error {
 		if err != nil {
 			return err
 		}
-		log.Printf("API Server listening on %s", s.Address)
+		log.Printf("WebServer listening on %s", s.Address)
 		return server.Serve(socket)
 	} else {
-		log.Printf("API Server listening on %s", s.Address)
+		log.Printf("WebServer listening on %s", s.Address)
 		return server.ListenAndServe()
 	}
 }
 
 func main() {
-	server := NewAPIServer("0.0.0.0:9080", false)
+	server := NewWebServer("0.0.0.0:9080", false)
+	log.SetOutput(server.LogWriter)
 	if err := server.Run(); err != nil {
 		log.Fatal(err)
 	}

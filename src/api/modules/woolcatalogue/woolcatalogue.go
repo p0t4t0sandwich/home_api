@@ -2,28 +2,41 @@ package woolcatalogue
 
 import (
 	"errors"
+	"home_api/src/database"
 	"home_api/src/responses"
+	"home_api/src/web/components"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
 
+	"github.com/a-h/templ"
 	"github.com/goccy/go-json"
 )
 
 // ------------------- Types -------------------
 
+type Tags string
+
+const (
+	Sparkly   Tags = "sparkly"
+	Christmas Tags = "christmas"
+)
+
 // Wool - Struct for wool
 type Wool struct {
-	ID          int    `json:"id,omitempty"`
+	ID          string `json:"id"`
 	Name        string `json:"name,omitempty"`
 	Brand       string `json:"brand,omitempty"`
-	Weight      string `json:"weight,omitempty"`
 	Length      string `json:"length,omitempty"`
+	Weight      string `json:"weight,omitempty"`
+	Ply         int    `json:"ply,omitempty"`
 	NeedleSize  string `json:"needle_size,omitempty"`
-	Price       string `json:"price,omitempty"`
 	Colour      string `json:"colour,omitempty"`
 	Composition string `json:"composition,omitempty"`
+	Quantity    int    `json:"quantity,omitempty"`
+	Partial     int    `json:"partial,omitempty"`
+	Tags        []Tags `json:"tags,omitempty"`
 }
 
 // ------------------- Store -------------------
@@ -43,8 +56,12 @@ type store struct {
 func Load() (*store, error) {
 	// Hardcoded filename for now
 	filename := "./data/woolcatalogue.json"
+	file, err := os.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
 	wools := []Wool{}
-	err := json.Unmarshal([]byte(filename), &wools)
+	err = json.Unmarshal([]byte(file), &wools)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +84,7 @@ func (s *store) Save() error {
 	return nil
 }
 
-func (s *store) GetWool(id int) (*Wool, error) {
+func (s *store) GetWool(id string) (*Wool, error) {
 	for _, wool := range s.wools {
 		if wool.ID == id {
 			return &wool, nil
@@ -91,7 +108,7 @@ func (s *store) UpdateWool(wool *Wool) error {
 	return errors.New("wool not found")
 }
 
-func (s *store) DeleteWool(id int) error {
+func (s *store) DeleteWool(id string) error {
 	for i, wool := range s.wools {
 		if wool.ID == id {
 			s.wools = append(s.wools[:i], s.wools[i+1:]...)
@@ -113,26 +130,40 @@ func ApplyRoutes(mux *http.ServeMux) *http.ServeMux {
 	mux.Handle("POST /api/v1/woolcatalogue/wool", CreateWool(store))
 	mux.Handle("PUT /api/v1/woolcatalogue/wool", UpdateWool(store))
 	mux.Handle("DELETE /api/v1/woolcatalogue/wool", DeleteWool(store))
+	mux.Handle("GET /api/v1/woolcatalogue/wools", GetWools(store))
+
+	mux.Handle("POST /html/wools", GetWoolsHTML(store))
+
+	mux.Handle("GET /woolcatalogue", templ.Handler(components.WoolRoot()))
 	return mux
 }
+
+// ------------------- API Routes -------------------
 
 // CreateWool - Create a new wool
 func CreateWool(s *store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		wool := Wool{}
-		err := json.NewDecoder(r.Body).Decode(&wool)
+		id, err := database.GenSnowflake()
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			responses.InternalServerError(w, r, "Could not generate ID")
 			return
 		}
-
+		wool := Wool{}
+		err = json.NewDecoder(r.Body).Decode(&wool)
+		if err != nil {
+			log.Println("Could not decode wool", err)
+			responses.BadRequest(w, r, "Could not decode wool")
+			return
+		}
+		wool.ID = id
 		err = s.CreateWool(&wool)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			log.Println("Could not create wool", err)
+			responses.BadRequest(w, r, "Could not create wool")
 			return
 		}
-
-		w.WriteHeader(http.StatusCreated)
+		log.Println("Wool", wool.ID, "created successfully")
+		responses.StructCreated(w, r, wool)
 	}
 }
 
@@ -141,21 +172,17 @@ func GetWool(s *store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
 		if id == "" {
+			log.Println("ID not found")
 			responses.NotFound(w, r, "ID not found")
 			return
 		}
-		intID, err := strconv.Atoi(id)
-		if err != nil {
-			log.Println("Could not convert ID to int", err)
-			responses.NotFound(w, r, "Could not convert ID to int")
-			return
-		}
-		wool, err := s.GetWool(intID)
+		wool, err := s.GetWool(id)
 		if err != nil {
 			log.Println("Wool not found", err)
 			responses.NotFound(w, r, "Wool not found")
 			return
 		}
+		log.Println("Wool", wool.ID, "found")
 		responses.StructOK(w, r, wool)
 	}
 }
@@ -176,6 +203,7 @@ func UpdateWool(s *store) http.HandlerFunc {
 			responses.BadRequest(w, r, "Could not update wool")
 			return
 		}
+		log.Println("Wool", wool.ID, "updated successfully")
 		responses.Success(w, r, "Wool updated successfully")
 	}
 }
@@ -189,18 +217,102 @@ func DeleteWool(s *store) http.HandlerFunc {
 			responses.NotFound(w, r, "ID not found")
 			return
 		}
-		intID, err := strconv.Atoi(id)
-		if err != nil {
-			log.Println("Could not convert ID to int", err)
-			responses.NotFound(w, r, "Could not convert ID to int")
-			return
-		}
-		err = s.DeleteWool(intID)
+		err := s.DeleteWool(id)
 		if err != nil {
 			log.Println("Could not delete wool", err)
 			responses.NotFound(w, r, "Could not delete wool")
 			return
 		}
+		log.Println("Wool", id, "deleted successfully")
 		responses.NoContent(w, r)
+	}
+}
+
+// Get wools
+func GetWools(s *store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		strAmmount := r.URL.Query().Get("ammount")
+		if strAmmount == "" {
+			strAmmount = "10"
+		}
+		strCursor := r.URL.Query().Get("cursor")
+		if strCursor == "" {
+			strCursor = "0"
+		}
+		ammount, err := strconv.Atoi(strAmmount)
+		if err != nil {
+			responses.BadRequest(w, r, "Invalid ammount")
+			return
+		}
+		cursor, err := strconv.Atoi(strCursor)
+		if err != nil {
+			responses.BadRequest(w, r, "Invalid cursor")
+			return
+		}
+		wools := []Wool{}
+		if cursor >= len(s.wools) {
+			responses.BadRequest(w, r, "Invalid cursor")
+			return
+		}
+		for i := cursor; i < cursor+ammount; i++ {
+			if i >= len(s.wools) {
+				break
+			}
+			wools = append(wools, s.wools[i])
+		}
+		responses.StructOK(w, r, wools)
+	}
+}
+
+// ------------------- HTML Routes -------------------
+
+// Return HTML HTMX
+func GetWoolsHTML(s *store) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		strAmmount := r.URL.Query().Get("ammount")
+		if strAmmount == "" {
+			strAmmount = "10"
+		}
+		strCursor := r.URL.Query().Get("cursor")
+		if strCursor == "" {
+			strCursor = "0"
+		}
+		ammount, err := strconv.Atoi(strAmmount)
+		if err != nil {
+			responses.BadRequest(w, r, "Invalid ammount")
+			return
+		}
+		cursor, err := strconv.Atoi(strCursor)
+		if err != nil {
+			responses.BadRequest(w, r, "Invalid cursor")
+			return
+		}
+		wools := []Wool{}
+		if cursor >= len(s.wools) {
+			responses.BadRequest(w, r, "Invalid cursor")
+			return
+		}
+		for i := cursor; i < cursor+ammount; i++ {
+			if i >= len(s.wools) {
+				break
+			}
+			wools = append(wools, s.wools[i])
+		}
+
+		// hx-trigger="every 2s"
+		html := `
+		<div
+			class="flex flex-col"
+			id="wools"
+			hx-post="/html/wools"
+			hx-target="#wools"
+			hx-swap="outerHTML"
+		>
+		`
+		for _, wool := range wools {
+			html += "<div>" + wool.Name + "</div>"
+		}
+		html += "</div>"
+		responses.SuccessHTML(w, r, html)
 	}
 }
