@@ -2,7 +2,7 @@ package responses
 
 import (
 	"encoding/xml"
-	"home_api/src/api/proto/problempb"
+	"home_api/src/proto/problempb"
 	"net/http"
 
 	"github.com/goccy/go-json"

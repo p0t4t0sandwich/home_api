@@ -1,7 +1,10 @@
 package responses
 
 import (
+	"context"
 	"encoding/xml"
+	"github.com/a-h/templ"
+	"log"
 	"net/http"
 
 	"github.com/goccy/go-json"
@@ -20,7 +23,7 @@ type ProtoEncoder interface {
 
 // SendStruct -- Send a struct as JSON, XML or Protobuf
 func SendStruct[T any](w http.ResponseWriter, r *http.Request, statusCode int, data T) {
-	var content string = "application/"
+	var content = "application/"
 	var structBytes []byte
 	switch accept := r.Header.Get("Accept"); accept {
 	case "application/x-protobuf":
@@ -42,7 +45,11 @@ func SendStruct[T any](w http.ResponseWriter, r *http.Request, statusCode int, d
 
 	w.Header().Set("Content-Type", content)
 	w.WriteHeader(statusCode)
-	w.Write(structBytes)
+	_, err := w.Write(structBytes)
+	if err != nil {
+		log.Println(err)
+		InternalServerError(w, r, "Could not write struct")
+	}
 }
 
 // DecodeStruct -- Decode a struct from JSON, XML or Protobuf
@@ -50,8 +57,11 @@ func DecodeStruct[T any](r *http.Request, data *T) error {
 	var err error
 	switch contentType := r.Header.Get("Content-Type"); contentType {
 	case "application/x-protobuf":
-		var b []byte = make([]byte, r.ContentLength)
-		r.Body.Read(b)
+		var b = make([]byte, r.ContentLength)
+		_, err := r.Body.Read(b)
+		if err != nil {
+			return err
+		}
 		if pb, ok := any(*data).(proto.Message); ok {
 			err = proto.Unmarshal(b, pb)
 		}
@@ -72,15 +82,31 @@ func Success(w http.ResponseWriter, r *http.Request, message string) {
 		message = "The request was successful."
 	}
 	w.Header().Set("Content-Type", "plain/text")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(message))
+	_, err := w.Write([]byte(message))
+	if err != nil {
+		log.Println(err)
+		InternalServerError(w, r, "Could not write text")
+	}
 }
 
-// SucessHTML -- Send a success response as HTML
+// SuccessHTML -- Send a success response as HTML
 func SuccessHTML(w http.ResponseWriter, r *http.Request, html string) {
 	w.Header().Set("Content-Type", "text/html")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(html))
+	_, err := w.Write([]byte(html))
+	if err != nil {
+		log.Println(err)
+		InternalServerError(w, r, "Could not write HTML")
+	}
+}
+
+// SendComponent -- Send a component as a success response
+func SendComponent(w http.ResponseWriter, r *http.Request, component templ.Component) {
+	w.Header().Set("Content-Type", "text/component")
+	err := component.Render(context.Background(), w)
+	if err != nil {
+		log.Println(err)
+		InternalServerError(w, r, "Could not render component")
+	}
 }
 
 // StructOK -- Send a struct as a success response
@@ -97,7 +123,11 @@ func StructCreated[T any](w http.ResponseWriter, r *http.Request, data T) {
 func NoContent(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusNoContent)
-	w.Write([]byte("{}"))
+	_, err := w.Write([]byte("{}"))
+	if err != nil {
+		log.Println(err)
+		InternalServerError(w, r, "Could not write JSON")
+	}
 }
 
 // BadRequest - Send and encode an invalid input problem

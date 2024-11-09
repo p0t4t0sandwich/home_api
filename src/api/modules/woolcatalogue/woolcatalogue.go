@@ -10,7 +10,6 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/a-h/templ"
 	"github.com/goccy/go-json"
 )
 
@@ -18,6 +17,7 @@ import (
 
 type Tags string
 
+//goland:noinspection GoUnusedConst
 const (
 	Sparkly   Tags = "sparkly"
 	Christmas Tags = "christmas"
@@ -53,15 +53,16 @@ type store struct {
 	wools []Wool
 }
 
+//goland:noinspection GoExportedFuncWithUnexportedType
 func Load() (*store, error) {
 	// Hardcoded filename for now
-	filename := "./data/woolcatalogue.json"
+	filename := "./data/wool-catalogue.json"
 	file, err := os.ReadFile(filename)
 	if err != nil {
 		return nil, err
 	}
-	wools := []Wool{}
-	err = json.Unmarshal([]byte(file), &wools)
+	var wools []Wool
+	err = json.Unmarshal(file, &wools)
 	if err != nil {
 		return nil, err
 	}
@@ -70,9 +71,9 @@ func Load() (*store, error) {
 	}, nil
 }
 
-func (s *store) Save() error {
+func (s *store) save() error {
 	// Hardcoded filename for now
-	filename := "./data/woolcatalogue.json"
+	filename := "./data/wool-catalogue.json"
 	data, err := json.Marshal(s.wools)
 	if err != nil {
 		return err
@@ -95,14 +96,14 @@ func (s *store) GetWool(id string) (*Wool, error) {
 
 func (s *store) CreateWool(wool *Wool) error {
 	s.wools = append(s.wools, *wool)
-	return s.Save()
+	return s.save()
 }
 
 func (s *store) UpdateWool(wool *Wool) error {
 	for i, w := range s.wools {
 		if w.ID == wool.ID {
 			s.wools[i] = *wool
-			return s.Save()
+			return s.save()
 		}
 	}
 	return errors.New("wool not found")
@@ -112,30 +113,10 @@ func (s *store) DeleteWool(id string) error {
 	for i, wool := range s.wools {
 		if wool.ID == id {
 			s.wools = append(s.wools[:i], s.wools[i+1:]...)
-			return s.Save()
+			return s.save()
 		}
 	}
 	return errors.New("wool not found")
-}
-
-// ------------------- Routes -------------------
-
-// ApplyRoutes - Apply the routes to the API server
-func ApplyRoutes(mux *http.ServeMux) *http.ServeMux {
-	store, err := Load()
-	if err != nil {
-		panic(err)
-	}
-	mux.Handle("GET /api/v1/woolcatalogue/wool", GetWool(store))
-	mux.Handle("POST /api/v1/woolcatalogue/wool", CreateWool(store))
-	mux.Handle("PUT /api/v1/woolcatalogue/wool", UpdateWool(store))
-	mux.Handle("DELETE /api/v1/woolcatalogue/wool", DeleteWool(store))
-	mux.Handle("GET /api/v1/woolcatalogue/wools", GetWools(store))
-
-	mux.Handle("POST /html/wools", GetWoolsHTML(store))
-
-	mux.Handle("GET /woolcatalogue", templ.Handler(components.WoolRoot()))
-	return mux
 }
 
 // ------------------- API Routes -------------------
@@ -228,20 +209,20 @@ func DeleteWool(s *store) http.HandlerFunc {
 	}
 }
 
-// Get wools
+// GetWools - Get a list of wools
 func GetWools(s *store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		strAmmount := r.URL.Query().Get("ammount")
-		if strAmmount == "" {
-			strAmmount = "10"
+		strAmount := r.URL.Query().Get("amount")
+		if strAmount == "" {
+			strAmount = "10"
 		}
 		strCursor := r.URL.Query().Get("cursor")
 		if strCursor == "" {
 			strCursor = "0"
 		}
-		ammount, err := strconv.Atoi(strAmmount)
+		amount, err := strconv.Atoi(strAmount)
 		if err != nil {
-			responses.BadRequest(w, r, "Invalid ammount")
+			responses.BadRequest(w, r, "Invalid amount")
 			return
 		}
 		cursor, err := strconv.Atoi(strCursor)
@@ -249,12 +230,12 @@ func GetWools(s *store) http.HandlerFunc {
 			responses.BadRequest(w, r, "Invalid cursor")
 			return
 		}
-		wools := []Wool{}
+		var wools []Wool
 		if cursor >= len(s.wools) {
 			responses.BadRequest(w, r, "Invalid cursor")
 			return
 		}
-		for i := cursor; i < cursor+ammount; i++ {
+		for i := cursor; i < cursor+amount; i++ {
 			if i >= len(s.wools) {
 				break
 			}
@@ -266,20 +247,20 @@ func GetWools(s *store) http.HandlerFunc {
 
 // ------------------- HTML Routes -------------------
 
-// Return HTML HTMX
+// GetWoolsHTML - Get a list of wools as HTML
 func GetWoolsHTML(s *store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		strAmmount := r.URL.Query().Get("ammount")
-		if strAmmount == "" {
-			strAmmount = "10"
+		strAmount := r.URL.Query().Get("amount")
+		if strAmount == "" {
+			strAmount = "10"
 		}
 		strCursor := r.URL.Query().Get("cursor")
 		if strCursor == "" {
 			strCursor = "0"
 		}
-		ammount, err := strconv.Atoi(strAmmount)
+		amount, err := strconv.Atoi(strAmount)
 		if err != nil {
-			responses.BadRequest(w, r, "Invalid ammount")
+			responses.BadRequest(w, r, "Invalid amount")
 			return
 		}
 		cursor, err := strconv.Atoi(strCursor)
@@ -287,32 +268,17 @@ func GetWoolsHTML(s *store) http.HandlerFunc {
 			responses.BadRequest(w, r, "Invalid cursor")
 			return
 		}
-		wools := []Wool{}
+		var wools []Wool
 		if cursor >= len(s.wools) {
 			responses.BadRequest(w, r, "Invalid cursor")
 			return
 		}
-		for i := cursor; i < cursor+ammount; i++ {
+		for i := cursor; i < cursor+amount; i++ {
 			if i >= len(s.wools) {
 				break
 			}
 			wools = append(wools, s.wools[i])
 		}
-
-		// hx-trigger="every 2s"
-		html := `
-		<div
-			class="flex flex-col"
-			id="wools"
-			hx-post="/html/wools"
-			hx-target="#wools"
-			hx-swap="outerHTML"
-		>
-		`
-		for _, wool := range wools {
-			html += "<div>" + wool.Name + "</div>"
-		}
-		html += "</div>"
-		responses.SuccessHTML(w, r, html)
+		responses.SendComponent(w, r, components.Wools(wools))
 	}
 }

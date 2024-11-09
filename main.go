@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"home_api/src/api/modules/woolcatalogue"
 	mw "home_api/src/middleware"
 	"home_api/src/routes"
 	"log"
@@ -52,7 +51,7 @@ func NewWebServer(address string, usingUDS bool) *WebServer {
 
 // ApplyRoutes - Apply the routes to the Webserver
 func ApplyRoutes(mux *http.ServeMux) *http.ServeMux {
-	woolcatalogue.ApplyRoutes(mux)
+	routes.WoolCatalogue(mux)
 	return mux
 }
 
