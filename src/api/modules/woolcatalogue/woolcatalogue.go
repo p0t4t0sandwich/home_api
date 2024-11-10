@@ -4,11 +4,11 @@ import (
 	"errors"
 	"home_api/src/database"
 	"home_api/src/responses"
-	"home_api/src/web/components"
 	"log"
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/goccy/go-json"
 )
@@ -26,7 +26,7 @@ const (
 // Wool - Struct for wool
 type Wool struct {
 	ID          string `json:"id"`
-	Name        string `json:"name,omitempty"`
+	Name        string `json:"name"`
 	Brand       string `json:"brand,omitempty"`
 	Length      string `json:"length,omitempty"`
 	Weight      string `json:"weight,omitempty"`
@@ -37,6 +37,14 @@ type Wool struct {
 	Quantity    int    `json:"quantity,omitempty"`
 	Partial     int    `json:"partial,omitempty"`
 	Tags        []Tags `json:"tags,omitempty"`
+}
+
+func (w Wool) TagsString() []string {
+	var tags []string
+	for _, tag := range w.Tags {
+		tags = append(tags, string(tag))
+	}
+	return tags
 }
 
 // ------------------- Store -------------------
@@ -121,30 +129,121 @@ func (s *store) DeleteWool(id string) error {
 
 // ------------------- API Routes -------------------
 
+// CreateWoolFromFormData - Create a new wool from form data
+func CreateWoolFromFormData(r *http.Request) (*Wool, error, int) {
+	err := r.ParseForm()
+	if err != nil {
+		log.Println("Could not parse form", err)
+		return nil, err, http.StatusBadRequest
+	}
+	id, err := database.GenSnowflake()
+	if err != nil {
+		log.Println("Could not generate ID", err)
+		return nil, err, http.StatusInternalServerError
+	}
+	wool := Wool{ID: id}
+	if name := r.Form.Get("name"); name != "" {
+		wool.Name = name
+	} else {
+		log.Println("Name not found")
+		return nil, errors.New("name not found"), http.StatusBadRequest
+	}
+	if brand := r.Form.Get("brand"); brand != "" {
+		wool.Brand = brand
+	}
+	if length := r.Form.Get("length"); length != "" {
+		wool.Length = length
+	}
+	if weight := r.Form.Get("weight"); weight != "" {
+		wool.Weight = weight
+	}
+	if ply := r.Form.Get("ply"); ply != "" {
+		plyInt, err := strconv.Atoi(ply)
+		if err != nil {
+			log.Println("Could not convert ply to int", err)
+			return nil, err, http.StatusBadRequest
+		}
+		wool.Ply = plyInt
+	}
+	if needleSize := r.Form.Get("needle_size"); needleSize != "" {
+		wool.NeedleSize = needleSize
+	}
+	if colour := r.Form.Get("colour"); colour != "" {
+		wool.Colour = colour
+	}
+	if composition := r.Form.Get("composition"); composition != "" {
+		wool.Composition = composition
+	}
+	if quantity := r.Form.Get("quantity"); quantity != "" {
+		quantityInt, err := strconv.Atoi(quantity)
+		if err != nil {
+			log.Println("Could not convert quantity to int", err)
+			return nil, err, http.StatusBadRequest
+		}
+		wool.Quantity = quantityInt
+	}
+	if partial := r.Form.Get("partial"); partial != "" {
+		partialInt, err := strconv.Atoi(partial)
+		if err != nil {
+			log.Println("Could not convert partial to int", err)
+			return nil, err, http.StatusBadRequest
+		}
+		wool.Partial = partialInt
+	}
+	if tags := r.Form.Get("tags"); tags != "" {
+		tags := strings.Split(tags, ",")
+		for _, tag := range tags {
+			wool.Tags = append(wool.Tags, Tags(tag))
+		}
+	}
+	return &wool, nil, http.StatusOK
+}
+
+// CreateWoolFromJSON - Create a new wool from JSON
+func CreateWoolFromJSON(r *http.Request) (*Wool, error, int) {
+	id, err := database.GenSnowflake()
+	if err != nil {
+		log.Println("Could not generate ID", err)
+		return nil, err, http.StatusInternalServerError
+	}
+	wool := Wool{ID: id}
+	err = json.NewDecoder(r.Body).Decode(&wool)
+	if err != nil {
+		log.Println("Could not decode wool", err)
+		return nil, err, http.StatusBadRequest
+	}
+	return &wool, nil, http.StatusOK
+}
+
 // CreateWool - Create a new wool
 func CreateWool(s *store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		id, err := database.GenSnowflake()
-		if err != nil {
-			responses.InternalServerError(w, r, "Could not generate ID")
-			return
+		var wool *Wool
+		var err error
+		var code int
+		if r.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+			wool, err, code = CreateWoolFromFormData(r)
+		} else {
+			wool, err, code = CreateWoolFromJSON(r)
 		}
-		wool := Wool{}
-		err = json.NewDecoder(r.Body).Decode(&wool)
 		if err != nil {
-			log.Println("Could not decode wool", err)
-			responses.BadRequest(w, r, "Could not decode wool")
-			return
+			switch code {
+			case http.StatusBadRequest:
+				responses.BadRequest(w, r, "Could not create wool")
+				return
+			case http.StatusInternalServerError:
+				responses.InternalServerError(w, r, "Could not create wool")
+				return
+			}
 		}
-		wool.ID = id
-		err = s.CreateWool(&wool)
+		err = s.CreateWool(wool)
 		if err != nil {
 			log.Println("Could not create wool", err)
-			responses.BadRequest(w, r, "Could not create wool")
+			responses.InternalServerError(w, r, "Could not create wool")
 			return
 		}
 		log.Println("Wool", wool.ID, "created successfully")
-		responses.StructCreated(w, r, wool)
+		responses.StructCreated(w, r, "Wool created successfully")
 	}
 }
 
@@ -279,6 +378,6 @@ func GetWoolsHTML(s *store) http.HandlerFunc {
 			}
 			wools = append(wools, s.wools[i])
 		}
-		responses.SendComponent(w, r, components.Wools(wools))
+		responses.SendComponent(w, r, WoolsHTML(wools))
 	}
 }

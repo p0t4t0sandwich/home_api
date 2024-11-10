@@ -18,6 +18,20 @@ func CreateStack(routers ...Router) Router {
 	}
 }
 
+// ApplyRoutes - Apply the routes to the Webserver
+func ApplyRoutes(mux *http.ServeMux) *http.ServeMux {
+	mux.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
+
+	Home(mux)
+	WoolCatalogue(mux)
+	return mux
+}
+
+func Home(mux *http.ServeMux) *http.ServeMux {
+	mux.Handle("/", templ.Handler(components.HomeRoot()))
+	return mux
+}
+
 func WoolCatalogue(mux *http.ServeMux) *http.ServeMux {
 	store, err := woolcatalogue.Load()
 	if err != nil {
@@ -27,8 +41,8 @@ func WoolCatalogue(mux *http.ServeMux) *http.ServeMux {
 	mux.Handle("POST /api/v1/wool-catalogue/wool", woolcatalogue.CreateWool(store))
 	mux.Handle("PUT /api/v1/wool-catalogue/wool", woolcatalogue.UpdateWool(store))
 	mux.Handle("DELETE /api/v1/wool-catalogue/wool", woolcatalogue.DeleteWool(store))
-
 	mux.Handle("GET /api/v1/wool-catalogue/wools", woolcatalogue.GetWools(store))
+
 	mux.Handle("GET /api/v1/wool-catalogue/html/wools", woolcatalogue.GetWoolsHTML(store))
 
 	mux.Handle("GET /wool-catalogue", templ.Handler(components.WoolRoot()))

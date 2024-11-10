@@ -49,12 +49,6 @@ func NewWebServer(address string, usingUDS bool) *WebServer {
 	}
 }
 
-// ApplyRoutes - Apply the routes to the Webserver
-func ApplyRoutes(mux *http.ServeMux) *http.ServeMux {
-	routes.WoolCatalogue(mux)
-	return mux
-}
-
 // Setup - Setup the Webserver
 func (s *WebServer) Setup() http.Handler {
 	routerStack := routes.CreateStack()
@@ -65,8 +59,7 @@ func (s *WebServer) Setup() http.Handler {
 	)
 
 	router := routerStack(http.NewServeMux())
-	router = ApplyRoutes(router)
-	router.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
+	router = routes.ApplyRoutes(router)
 	return middlewareStack(router)
 }
 
