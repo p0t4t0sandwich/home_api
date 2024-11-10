@@ -311,23 +311,28 @@ func DeleteWool(s *store) http.HandlerFunc {
 // GetWools - Get a list of wools
 func GetWools(s *store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var amount int
+		var err error
 		strAmount := r.URL.Query().Get("amount")
 		if strAmount == "" {
-			strAmount = "10"
+			amount = 12
+		} else {
+			amount, err = strconv.Atoi(strAmount)
+			if err != nil {
+				responses.BadRequest(w, r, "Invalid amount")
+				return
+			}
 		}
+		var cursor int
 		strCursor := r.URL.Query().Get("cursor")
 		if strCursor == "" {
-			strCursor = "0"
-		}
-		amount, err := strconv.Atoi(strAmount)
-		if err != nil {
-			responses.BadRequest(w, r, "Invalid amount")
-			return
-		}
-		cursor, err := strconv.Atoi(strCursor)
-		if err != nil {
-			responses.BadRequest(w, r, "Invalid cursor")
-			return
+			cursor = 0
+		} else {
+			cursor, err = strconv.Atoi(strCursor)
+			if err != nil {
+				responses.BadRequest(w, r, "Invalid cursor")
+				return
+			}
 		}
 		var wools []Wool
 		if cursor >= len(s.wools) {
@@ -349,23 +354,28 @@ func GetWools(s *store) http.HandlerFunc {
 // GetWoolsHTML - Get a list of wools as HTML
 func GetWoolsHTML(s *store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		var amount int
+		var err error
 		strAmount := r.URL.Query().Get("amount")
 		if strAmount == "" {
-			strAmount = "10"
+			amount = 12
+		} else {
+			amount, err = strconv.Atoi(strAmount)
+			if err != nil {
+				responses.BadRequest(w, r, "Invalid amount")
+				return
+			}
 		}
+		var cursor int
 		strCursor := r.URL.Query().Get("cursor")
 		if strCursor == "" {
-			strCursor = "0"
-		}
-		amount, err := strconv.Atoi(strAmount)
-		if err != nil {
-			responses.BadRequest(w, r, "Invalid amount")
-			return
-		}
-		cursor, err := strconv.Atoi(strCursor)
-		if err != nil {
-			responses.BadRequest(w, r, "Invalid cursor")
-			return
+			cursor = 0
+		} else {
+			cursor, err = strconv.Atoi(strCursor)
+			if err != nil {
+				responses.BadRequest(w, r, "Invalid cursor")
+				return
+			}
 		}
 		var wools []Wool
 		if cursor >= len(s.wools) {
