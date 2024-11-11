@@ -37,14 +37,13 @@ func WoolCatalogue(mux *http.ServeMux) *http.ServeMux {
 	if err != nil {
 		panic(err)
 	}
+	mux.Handle("GET /wool-catalogue", templ.Handler(components.WoolRoot()))
+
 	mux.Handle("GET /api/v1/wool-catalogue/wool", woolcatalogue.GetWool(store))
 	mux.Handle("POST /api/v1/wool-catalogue/wool", woolcatalogue.CreateWool(store))
 	mux.Handle("PUT /api/v1/wool-catalogue/wool", woolcatalogue.UpdateWool(store))
 	mux.Handle("DELETE /api/v1/wool-catalogue/wool", woolcatalogue.DeleteWool(store))
 	mux.Handle("GET /api/v1/wool-catalogue/wools", woolcatalogue.GetWools(store))
 
-	mux.Handle("GET /api/v1/wool-catalogue/html/wools", woolcatalogue.GetWoolsHTML(store))
-
-	mux.Handle("GET /wool-catalogue", templ.Handler(components.WoolRoot()))
 	return mux
 }

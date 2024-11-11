@@ -319,6 +319,7 @@ func GetWools(s *store) http.HandlerFunc {
 		} else {
 			amount, err = strconv.Atoi(strAmount)
 			if err != nil {
+				log.Println("Invalid amount", err)
 				responses.BadRequest(w, r, "Invalid amount")
 				return
 			}
@@ -330,6 +331,7 @@ func GetWools(s *store) http.HandlerFunc {
 		} else {
 			cursor, err = strconv.Atoi(strCursor)
 			if err != nil {
+				log.Println("Invalid cursor", err)
 				responses.BadRequest(w, r, "Invalid cursor")
 				return
 			}
@@ -345,49 +347,10 @@ func GetWools(s *store) http.HandlerFunc {
 			}
 			wools = append(wools, s.wools[i])
 		}
-		responses.StructOK(w, r, wools)
-	}
-}
-
-// ------------------- HTML Routes -------------------
-
-// GetWoolsHTML - Get a list of wools as HTML
-func GetWoolsHTML(s *store) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var amount int
-		var err error
-		strAmount := r.URL.Query().Get("amount")
-		if strAmount == "" {
-			amount = 12
+		if r.Header.Get("Content-Type") == "" {
+			responses.SendComponent(w, r, WoolsHTML(wools))
 		} else {
-			amount, err = strconv.Atoi(strAmount)
-			if err != nil {
-				responses.BadRequest(w, r, "Invalid amount")
-				return
-			}
+			responses.StructOK(w, r, wools)
 		}
-		var cursor int
-		strCursor := r.URL.Query().Get("cursor")
-		if strCursor == "" {
-			cursor = 0
-		} else {
-			cursor, err = strconv.Atoi(strCursor)
-			if err != nil {
-				responses.BadRequest(w, r, "Invalid cursor")
-				return
-			}
-		}
-		var wools []Wool
-		if cursor >= len(s.wools) {
-			responses.BadRequest(w, r, "Invalid cursor")
-			return
-		}
-		for i := cursor; i < cursor+amount; i++ {
-			if i >= len(s.wools) {
-				break
-			}
-			wools = append(wools, s.wools[i])
-		}
-		responses.SendComponent(w, r, WoolsHTML(wools))
 	}
 }
