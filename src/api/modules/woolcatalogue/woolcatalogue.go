@@ -348,7 +348,7 @@ func GetWools(s *store) http.HandlerFunc {
 			wools = append(wools, s.wools[i])
 		}
 		if r.Header.Get("Content-Type") == "" {
-			responses.SendComponent(w, r, WoolsHTML(wools))
+			responses.SendComponent(w, r, WoolCards(wools))
 		} else {
 			responses.StructOK(w, r, wools)
 		}

@@ -35,11 +35,19 @@ func WoolRoot() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"wools\" hx-get=\"/api/v1/wool-catalogue/wools\" hx-vals=\"js:{amount: amount, cursor: cursor}\" hx-trigger=\"load\" hx-target=\"#wools\" hx-swap=\"outerHTML\">You shouldn't see this unless you have JavaScript disabled</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
 		templ_7745c5c3_Err = AddNewWoolModal().Render(ctx, templ_7745c5c3_Buffer)
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"wools\" hx-get=\"/api/v1/wool-catalogue/wools\" hx-vals=\"js:{amount: amount, cursor: cursor}\" hx-trigger=\"load\" hx-target=\"#wools\" hx-swap=\"outerHTML\"></div></body></html>")
+		templ_7745c5c3_Err = EditWoolModal().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -98,7 +106,7 @@ func CreateWoolButton() templ.Component {
 	})
 }
 
-func AddNewWoolModal() templ.Component {
+func ModalFormFields() templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -111,7 +119,71 @@ func AddNewWoolModal() templ.Component {
 			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"add-new-wool-modal\" hidden=\"hidden\" class=\"fixed z-10 inset-0 overflow-y-auto\"><div class=\"flex items center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0\"><div class=\"fixed inset-0 transition-opacity\" aria-hidden=\"true\"><div class=\"absolute inset-0 bg-gray-500 opacity-75\"></div></div><span class=\"hidden sm:inline-block sm:align-middle sm:h-screen\" aria-hidden=\"true\">&#8203;</span><div class=\"inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full\"><div class=\"bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4\"><div class=\"sm:flex sm:items-start\"><div class=\"mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left\"><h3 class=\"text-lg leading-6 font-medium text-gray-900\" id=\"modal-title\">Add New Wool</h3><div class=\"mt-2\"><form target=\"dummy-frame\" action=\"/api/v1/wool-catalogue/wool\" method=\"post\"><div class=\"grid grid-cols-2 gap-4\"><div><label for=\"name\" class=\"block text-sm font-medium text-gray-700\">Name</label> <input type=\"text\" name=\"name\" id=\"name\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"brand\" class=\"block text-sm font-medium text-gray-700\">Brand</label> <input type=\"text\" name=\"brand\" id=\"brand\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"length\" class=\"block text-sm font-medium text-gray-700\">Length</label> <input type=\"text\" name=\"length\" id=\"length\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"weight\" class=\"block text-sm font-medium text-gray-700\">Weight</label> <input type=\"text\" name=\"weight\" id=\"weight\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"ply\" class=\"block text-sm font-medium text-gray-700\">Ply</label> <input type=\"text\" name=\"ply\" id=\"ply\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"needleSize\" class=\"block text-sm font-medium text-gray-700\">Needle Size</label> <input type=\"text\" name=\"needleSize\" id=\"needleSize\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"colour\" class=\"block text-sm font-medium text-gray-700\">Colour</label> <input type=\"text\" name=\"colour\" id=\"colour\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"composition\" class=\"block text-sm font-medium text-gray-700\">Composition</label> <input type=\"text\" name=\"composition\" id=\"composition\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"quantity\" class=\"block text-sm font-medium text-gray-700\">Quantity</label> <input type=\"text\" name=\"quantity\" id=\"quantity\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"partial\" class=\"block text-sm font-medium text-gray-700\">Partial</label> <input type=\"text\" name=\"partial\" id=\"partial\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"tags\" class=\"block text-sm font-medium text-gray-700\">Tags</label> <input type=\"text\" name=\"tags\" id=\"tags\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div></div><div class=\"flex inline-flex justify-center items-center gap-2 w-full mt-5 sm:text-sm text-base font-medium text-white\"><button type=\"button\" class=\"rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500\" onclick=\"document.getElementById(&#39;add-new-wool-modal&#39;).hidden = true;\">Cancel</button> <button type=\"submit\" class=\"rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500\" hx-get=\"/api/v1/wool-catalogue/wools\" hx-vals=\"js:{amount: amount, cursor: cursor}\" hx-target=\"#wools\" hx-swap=\"outerHTML\" hx-trigger=\"form\" onclick=\"document.getElementById(&#39;add-new-wool-modal&#39;).hidden = true;\">Add Wool</button></div></form></div></div></div></div></div></div></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"grid grid-cols-2 gap-4\"><div><label for=\"name\" class=\"block text-sm font-medium text-gray-700\">Name</label> <input type=\"text\" name=\"name\" id=\"name\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"brand\" class=\"block text-sm font-medium text-gray-700\">Brand</label> <input type=\"text\" name=\"brand\" id=\"brand\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"length\" class=\"block text-sm font-medium text-gray-700\">Length</label> <input type=\"text\" name=\"length\" id=\"length\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"weight\" class=\"block text-sm font-medium text-gray-700\">Weight</label> <input type=\"text\" name=\"weight\" id=\"weight\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"ply\" class=\"block text-sm font-medium text-gray-700\">Ply</label> <input type=\"text\" name=\"ply\" id=\"ply\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"needleSize\" class=\"block text-sm font-medium text-gray-700\">Needle Size</label> <input type=\"text\" name=\"needleSize\" id=\"needleSize\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"colour\" class=\"block text-sm font-medium text-gray-700\">Colour</label> <input type=\"text\" name=\"colour\" id=\"colour\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"composition\" class=\"block text-sm font-medium text-gray-700\">Composition</label> <input type=\"text\" name=\"composition\" id=\"composition\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"quantity\" class=\"block text-sm font-medium text-gray-700\">Quantity</label> <input type=\"text\" name=\"quantity\" id=\"quantity\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"partial\" class=\"block text-sm font-medium text-gray-700\">Partial</label> <input type=\"text\" name=\"partial\" id=\"partial\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"tags\" class=\"block text-sm font-medium text-gray-700\">Tags</label> <input type=\"text\" name=\"tags\" id=\"tags\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !templ_7745c5c3_IsBuffer {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteTo(templ_7745c5c3_W)
+		}
+		return templ_7745c5c3_Err
+	})
+}
+
+func AddNewWoolModal() templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
+		if !templ_7745c5c3_IsBuffer {
+			templ_7745c5c3_Buffer = templ.GetBuffer()
+			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"add-new-wool-modal\" hidden=\"hidden\" class=\"fixed z-10 inset-0 overflow-y-auto\"><div class=\"flex items center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0\"><div class=\"fixed inset-0 transition-opacity\" aria-hidden=\"true\"><div class=\"absolute inset-0 bg-gray-500 opacity-75\"></div></div><span class=\"hidden sm:inline-block sm:align-middle sm:h-screen\" aria-hidden=\"true\">&#8203;</span><div class=\"inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full\"><div class=\"bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4\"><div class=\"sm:flex sm:items-start\"><div class=\"mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left\"><h3 class=\"text-lg leading-6 font-medium text-gray-900\" id=\"modal-title\">Add New Wool</h3><div class=\"mt-2\"><form target=\"dummy-frame\" action=\"/api/v1/wool-catalogue/wool\" method=\"post\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = ModalFormFields().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex inline-flex justify-center items-center gap-2 w-full mt-5 sm:text-sm text-base font-medium text-white\"><button type=\"button\" class=\"rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500\" onclick=\"document.getElementById(&#39;add-new-wool-modal&#39;).hidden = true;\">Cancel</button> <button type=\"submit\" class=\"rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500\" hx-get=\"/api/v1/wool-catalogue/wools\" hx-vals=\"js:{amount: amount, cursor: cursor}\" hx-target=\"#wools\" hx-swap=\"outerHTML\" hx-trigger=\"form\" onclick=\"document.getElementById(&#39;add-new-wool-modal&#39;).hidden = true;\">Add Wool</button></div></form></div></div></div></div></div></div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !templ_7745c5c3_IsBuffer {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteTo(templ_7745c5c3_W)
+		}
+		return templ_7745c5c3_Err
+	})
+}
+
+func EditWoolModal() templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
+		if !templ_7745c5c3_IsBuffer {
+			templ_7745c5c3_Buffer = templ.GetBuffer()
+			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var6 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var6 == nil {
+			templ_7745c5c3_Var6 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"edit-wool-modal\" hidden=\"hidden\" class=\"fixed z-10 inset-0 overflow-y-auto\"><div class=\"flex items center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0\"><div class=\"fixed inset-0 transition-opacity\" aria-hidden=\"true\"><div class=\"absolute inset-0 bg-gray-500 opacity-75\"></div></div><span class=\"hidden sm:inline-block sm:align-middle sm:h-screen\" aria-hidden=\"true\">&#8203;</span><div class=\"inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full\"><div class=\"bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4\"><div class=\"sm:flex sm:items-start\"><div class=\"mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left\"><h3 class=\"text-lg leading-6 font-medium text-gray-900\" id=\"modal-title\">Edit Wool</h3><div class=\"mt-2\"><form target=\"dummy-frame\" action=\"/api/v1/wool-catalogue/wool\" method=\"put\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Err = ModalFormFields().Render(ctx, templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex inline-flex justify-center items-center gap-2 w-full mt-5 sm:text-sm text-base font-medium text-white\"><button type=\"button\" class=\"rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500\" onclick=\"document.getElementById(&#39;edit-wool-modal&#39;).hidden = true;\">Cancel</button> <button type=\"submit\" class=\"rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500\" hx-get=\"/api/v1/wool-catalogue/wools\" hx-vals=\"js:{amount: amount, cursor: cursor}\" hx-target=\"#wools\" hx-swap=\"outerHTML\" hx-trigger=\"form\" onclick=\"document.getElementById(&#39;edit-wool-modal&#39;).hidden = true;\">Edit Wool</button></div></form></div></div></div></div></div></div></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

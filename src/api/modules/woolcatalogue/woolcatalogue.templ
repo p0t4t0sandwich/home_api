@@ -3,18 +3,20 @@ package woolcatalogue
 import "strconv"
 import "strings"
 
-templ WoolsHTML(wools []Wool) {
+templ WoolCards(wools []Wool) {
     <div class="flex flex-col">
         <div class="grid grid-flow-row grid-cols-4" id="wools">
             for _, wool := range wools {
-                @WoolHTML(wool)
+                @WoolCard(wool)
             }
         </div>
     </div>
 }
 
-templ WoolHTML(wool Wool) {
+templ WoolCard(wool Wool) {
     <div class="flex flex-col flex-row justify-center bg-green-100 p-5 w-84 h-96 m-5 text-lg shadow-xl rounded-lg">
+        // TODO: Add a hidden field to store the wool.ID, so the edit modal can use it
+        // Maybe use it as an input to the edit button component
         <div>Name: {wool.Name}</div>
         <div>Brand: {wool.Brand}</div>
         <div>Length: {wool.Length}</div>
@@ -26,5 +28,16 @@ templ WoolHTML(wool Wool) {
         <div>Quantity: {strconv.Itoa(wool.Quantity)}</div>
         <div>Partial: {strconv.Itoa(wool.Partial)}</div>
         <div>Tags: {strings.Join(wool.TagsString(), ", ")}</div>
+        @EditWoolButton()
     </div>
+}
+
+templ EditWoolButton() {
+    <button
+        type="button"
+        class="rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        onclick="document.getElementById('edit-wool-modal').hidden = false;"
+    >
+        Edit
+    </button>
 }
