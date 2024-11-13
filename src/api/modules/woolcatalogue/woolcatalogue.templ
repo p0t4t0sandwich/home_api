@@ -1,43 +1,84 @@
 package woolcatalogue
 
 import "strconv"
-import "strings"
 
 templ WoolCards(wools []Wool) {
-    <div class="flex flex-col">
-        <div class="grid grid-flow-row grid-cols-4" id="wools">
-            for _, wool := range wools {
-                @WoolCard(wool)
-            }
-        </div>
+    // TODO: Vary the number of columns and text size based on screen size
+    <div class="flex flex-col flex-row justify-center grid grid-flow-row grid-cols-4" id="wools">
+        for _, wool := range wools {
+            @WoolCard(wool)
+        }
     </div>
 }
 
 templ WoolCard(wool Wool) {
-    <div class="flex flex-col flex-row justify-center bg-green-100 p-5 w-84 h-96 m-5 text-lg shadow-xl rounded-lg">
+    <div class="bg-green-100 p-5 w-auto h-96 m-5 text-lg shadow-xl rounded-lg">
         // TODO: Add a hidden field to store the wool.ID, so the edit modal can use it
         // Maybe use it as an input to the edit button component
+        <input type="hidden" id="wool-id" value={wool.ID} />
         <div>Name: {wool.Name}</div>
-        <div>Brand: {wool.Brand}</div>
-        <div>Length: {wool.Length}</div>
-        <div>Weight: {wool.Weight}</div>
+        <!-- <div>Brand: {wool.Brand}</div> -->
+        <!-- <div>Length: {wool.Length}</div> -->
+        <!-- <div>Weight: {wool.Weight}</div> -->
         <div>Ply: {strconv.Itoa(wool.Ply)}</div>
-        <div>Needle Size: {wool.NeedleSize}</div>
-        <div>Colour: {wool.Colour}</div>
+        <!-- <div>Needle Size: {wool.NeedleSize}</div> -->
+        <!-- <div>Colour: {wool.Colour}</div> -->
         <div>Composition: {wool.Composition}</div>
-        <div>Quantity: {strconv.Itoa(wool.Quantity)}</div>
-        <div>Partial: {strconv.Itoa(wool.Partial)}</div>
-        <div>Tags: {strings.Join(wool.TagsString(), ", ")}</div>
-        @EditWoolButton()
+        <!-- <div>Quantity: {strconv.Itoa(wool.Quantity)}</div> -->
+        <!-- <div>Partial: {strconv.Itoa(wool.Partial)}</div> -->
+        <!-- <div>Tags: {strings.Join(wool.TagsString(), ", ")}</div> -->
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        @ButtonRow(wool.ID)
     </div>
 }
 
-templ EditWoolButton() {
+templ ButtonRow(id string) {
+    <div class="flex flex-row justify-end space-x-1">
+        @EditWoolButton(id)
+        @DeleteWoolButton(id)
+        @InfoWoolButton(id)
+    </div>
+}
+
+templ InfoWoolButton(id string) {
     <button
         type="button"
-        class="rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+        class="rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-500 hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500"
+        onclick="document.getElementById('info-wool-modal').hidden = false;"
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        	<path fill="white" d="M12 17q.425 0 .713-.288T13 16v-4q0-.425-.288-.712T12 11t-.712.288T11 12v4q0 .425.288.713T12 17m0-8q.425 0 .713-.288T13 8t-.288-.712T12 7t-.712.288T11 8t.288.713T12 9m0 13q-2.075 0-3.9-.788t-3.175-2.137T2.788 15.9T2 12t.788-3.9t2.137-3.175T8.1 2.788T12 2t3.9.788t3.175 2.137T21.213 8.1T22 12t-.788 3.9t-2.137 3.175t-3.175 2.138T12 22m0-2q3.35 0 5.675-2.325T20 12t-2.325-5.675T12 4T6.325 6.325T4 12t2.325 5.675T12 20m0-8" />
+        </svg>
+    </button>
+}
+
+templ EditWoolButton(id string) {
+    <button
+        type="button"
+        class="rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-500 hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         onclick="document.getElementById('edit-wool-modal').hidden = false;"
     >
-        Edit
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        	<path fill="white" d="M5 21q-.825 0-1.412-.587T3 19V5q0-.825.588-1.412T5 3h6.525q.5 0 .75.313t.25.687t-.262.688T11.5 5H5v14h14v-6.525q0-.5.313-.75t.687-.25t.688.25t.312.75V19q0 .825-.587 1.413T19 21zm4-7v-2.425q0-.4.15-.763t.425-.637l8.6-8.6q.3-.3.675-.45t.75-.15q.4 0 .763.15t.662.45L22.425 3q.275.3.425.663T23 4.4t-.137.738t-.438.662l-8.6 8.6q-.275.275-.637.438t-.763.162H10q-.425 0-.712-.288T9 14m12.025-9.6l-1.4-1.4zM11 13h1.4l5.8-5.8l-.7-.7l-.725-.7L11 11.575zm6.5-6.5l-.725-.7zl.7.7z" />
+        </svg>
+    </button>
+}
+
+templ DeleteWoolButton(id string) {
+    <button
+        type="button"
+        class="rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-500 hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+        onclick="document.getElementById('delete-wool-modal').hidden = false;"
+    >
+        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+        	<path fill="white" d="M7 21q-.825 0-1.412-.587T5 19V6q-.425 0-.712-.288T4 5t.288-.712T5 4h4q0-.425.288-.712T10 3h4q.425 0 .713.288T15 4h4q.425 0 .713.288T20 5t-.288.713T19 6v13q0 .825-.587 1.413T17 21zM17 6H7v13h10zm-7 11q.425 0 .713-.288T11 16V9q0-.425-.288-.712T10 8t-.712.288T9 9v7q0 .425.288.713T10 17m4 0q.425 0 .713-.288T15 16V9q0-.425-.288-.712T14 8t-.712.288T13 9v7q0 .425.288.713T14 17M7 6v13z" />
+        </svg>
     </button>
 }

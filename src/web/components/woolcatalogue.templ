@@ -13,7 +13,7 @@ templ WoolRoot() {
 		let amount = 12;
 		let cursor = 0;
 		</script>
-		<body class="bg-pink-200">
+		<body class="bg-purple-200">
     		<!-- This is a dummy frame to prevent the page from reloading when a form is submitted -->
     		<iframe name="dummy-frame" id="dummy-frame" style="display: none;"></iframe>
     		@NavBar()
@@ -41,10 +41,12 @@ templ NavBar() {
 templ CreateWoolButton() {
     <div class="flex flex-col flex-row justify-center bg-green-100 p-5 m-5 text-lg shadow-xl rounded-lg">
         <button
-            class="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+            class="bg-green-400 hover:bg-green-500 text-white font-bold py-2 px-4 rounded"
             onclick="document.getElementById('add-new-wool-modal').hidden = false;"
         >
-            Add New Wool
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24">
+            	<path fill="white" d="M12 21q-.425 0-.712-.288T11 20v-7H4q-.425 0-.712-.288T3 12t.288-.712T4 11h7V4q0-.425.288-.712T12 3t.713.288T13 4v7h7q.425 0 .713.288T21 12t-.288.713T20 13h-7v7q0 .425-.288.713T12 21" />
+            </svg>
         </button>
     </div>
 }

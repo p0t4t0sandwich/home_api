@@ -23,7 +23,7 @@ func WoolRoot() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Wool Catalogue</title><link rel=\"stylesheet\" href=\"/public/styles.css\"><script src=\"/public/htmx-v2.0.3.js\"></script></head><script>\n\t\tlet amount = 12;\n\t\tlet cursor = 0;\n\t\t</script><body class=\"bg-pink-200\"><!-- This is a dummy frame to prevent the page from reloading when a form is submitted --><iframe name=\"dummy-frame\" id=\"dummy-frame\" style=\"display: none;\"></iframe>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Wool Catalogue</title><link rel=\"stylesheet\" href=\"/public/styles.css\"><script src=\"/public/htmx-v2.0.3.js\"></script></head><script>\n\t\tlet amount = 12;\n\t\tlet cursor = 0;\n\t\t</script><body class=\"bg-purple-200\"><!-- This is a dummy frame to prevent the page from reloading when a form is submitted --><iframe name=\"dummy-frame\" id=\"dummy-frame\" style=\"display: none;\"></iframe>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -95,7 +95,7 @@ func CreateWoolButton() templ.Component {
 			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex flex-col flex-row justify-center bg-green-100 p-5 m-5 text-lg shadow-xl rounded-lg\"><button class=\"bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded\" onclick=\"document.getElementById(&#39;add-new-wool-modal&#39;).hidden = false;\">Add New Wool</button></div>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex flex-col flex-row justify-center bg-green-100 p-5 m-5 text-lg shadow-xl rounded-lg\"><button class=\"bg-green-400 hover:bg-green-500 text-white font-bold py-2 px-4 rounded\" onclick=\"document.getElementById(&#39;add-new-wool-modal&#39;).hidden = false;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"36\" height=\"36\" viewBox=\"0 0 24 24\"><path fill=\"white\" d=\"M12 21q-.425 0-.712-.288T11 20v-7H4q-.425 0-.712-.288T3 12t.288-.712T4 11h7V4q0-.425.288-.712T12 3t.713.288T13 4v7h7q.425 0 .713.288T21 12t-.288.713T20 13h-7v7q0 .425-.288.713T12 21\"></path></svg></button></div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
