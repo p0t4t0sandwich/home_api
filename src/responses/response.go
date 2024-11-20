@@ -119,15 +119,9 @@ func StructCreated[T any](w http.ResponseWriter, r *http.Request, data T) {
 	SendStruct(w, r, http.StatusCreated, data)
 }
 
-// NoContent -- Send a no content response as JSON or XML
-func NoContent(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
+// NoContent -- Send a no content response
+func NoContent(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNoContent)
-	_, err := w.Write([]byte("{}"))
-	if err != nil {
-		log.Println(err)
-		InternalServerError(w, r, "Could not write JSON")
-	}
 }
 
 // BadRequest - Send and encode an invalid input problem

@@ -2,6 +2,7 @@ package routes
 
 import (
 	"github.com/a-h/templ"
+	"home_api/src/api/modules/photodump"
 	"home_api/src/api/modules/woolcatalogue"
 	"home_api/src/web/components"
 	"net/http"
@@ -23,12 +24,21 @@ func ApplyRoutes(mux *http.ServeMux) *http.ServeMux {
 	mux.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
 
 	Home(mux)
+	PhotoDump(mux)
 	WoolCatalogue(mux)
 	return mux
 }
 
 func Home(mux *http.ServeMux) *http.ServeMux {
 	mux.Handle("/", templ.Handler(components.HomeRoot()))
+	return mux
+}
+
+func PhotoDump(mux *http.ServeMux) *http.ServeMux {
+	mux.Handle("GET /photo-dump", templ.Handler(components.PhotoDumpRoot()))
+
+	mux.Handle("POST /photo-dump/upload", http.HandlerFunc(photodump.UploadPhoto))
+
 	return mux
 }
 

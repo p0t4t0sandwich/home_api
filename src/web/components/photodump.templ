@@ -1,0 +1,20 @@
+package components
+
+templ PhotoDumpRoot() {
+    <!DOCTYPE html>
+    <html lang="en">
+        <head>
+            <meta charset="UTF-8"/>
+            <title>Photo Dump</title>
+        </head>
+        <body>
+            <!-- This is a dummy frame to prevent the page from reloading when a form is submitted -->
+            <iframe name="dummy-frame" id="dummy-frame" style="display: none;"></iframe>
+            <p class="flex flex-row justify-center items-center text-lg">Photo Dump</p>
+            <form action="/photo-dump/upload" method="post" enctype="multipart/form-data" target="dummy-frame">
+                <input type="file" name="photo" accept="image/*"/>
+                <input type="submit" value="Upload"/>
+            </form>
+        </body>
+    </html>
+}

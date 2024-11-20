@@ -304,7 +304,7 @@ func DeleteWool(s *store) http.HandlerFunc {
 			return
 		}
 		log.Println("Wool", id, "deleted successfully")
-		responses.NoContent(w, r)
+		responses.NoContent(w)
 	}
 }
 
