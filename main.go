@@ -1,6 +1,7 @@
 package main
 
 import (
+	_ "embed"
 	"fmt"
 	mw "home_api/src/middleware"
 	"home_api/src/routes"
@@ -13,6 +14,8 @@ import (
 
 	"github.com/rs/cors"
 )
+
+var static embed.FS
 
 type LogWriter struct {
 	FileName string

@@ -23,7 +23,7 @@ func PhotoDumpRoot() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Photo Dump</title></head><body><!-- This is a dummy frame to prevent the page from reloading when a form is submitted --><iframe name=\"dummy-frame\" id=\"dummy-frame\" style=\"display: none;\"></iframe><p class=\"flex flex-row justify-center items-center text-lg\">Photo Dump</p><form action=\"/photo-dump/upload\" method=\"post\" enctype=\"multipart/form-data\" target=\"dummy-frame\"><input type=\"file\" name=\"photo\" accept=\"image/*\"> <input type=\"submit\" value=\"Upload\"></form></body></html>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Photo Dump</title><link rel=\"stylesheet\" href=\"/public/styles.css\"></head><body class=\"bg-gray-500\"><!-- This is a dummy frame to prevent the page from reloading when a form is submitted --><iframe name=\"dummy-frame\" id=\"dummy-frame\" style=\"display: none;\"></iframe><p class=\"flex flex-row justify-center items-center text-lg\">Photo Dump</p><form action=\"/photo-dump/upload\" method=\"post\" enctype=\"multipart/form-data\" target=\"dummy-frame\"><input type=\"file\" name=\"photo\" accept=\"image/*\"> <input type=\"submit\" value=\"Upload\"></form></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

@@ -23,7 +23,7 @@ func HomeRoot() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Home</title></head><body><p class=\"flex flex-row justify-center items-center text-lg\">Home</p><div class=\"flex justify-start bg-pink-300 p-5 w-84 h-96\"><div><a href=\"/photo-dump\">Photo Dump</a></div></div><div class=\"flex justify-start bg-pink-300 p-5 w-84 h-96\"><div><a href=\"/wool-catalogue\">Wool Catalogue</a></div></div></body></html>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Home</title><link rel=\"stylesheet\" href=\"/public/styles.css\"></head><body class=\"bg-gray-500\"><p class=\"flex flex-row justify-center items-center text-lg\">Home</p><div class=\"flex justify-start bg-pink-300 p-5\"><div><a href=\"/photo-dump\">Photo Dump</a></div></div><div class=\"flex justify-start bg-pink-300 p-5\"><div><a href=\"/wool-catalogue\">Wool Catalogue</a></div></div></body></html>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

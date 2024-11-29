@@ -17,7 +17,6 @@ import (
 
 type Tags string
 
-//goland:noinspection GoUnusedConst
 const (
 	Sparkly   Tags = "sparkly"
 	Christmas Tags = "christmas"
@@ -61,7 +60,6 @@ type store struct {
 	wools []Wool
 }
 
-//goland:noinspection GoExportedFuncWithUnexportedType
 func Load() (*store, error) {
 	// Hardcoded filename for now
 	filename := "./data/wool-catalogue.json"

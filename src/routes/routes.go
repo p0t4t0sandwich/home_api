@@ -35,10 +35,20 @@ func Home(mux *http.ServeMux) *http.ServeMux {
 }
 
 func PhotoDump(mux *http.ServeMux) *http.ServeMux {
+	store, err := photodump.Load()
+	if err != nil {
+		panic(err)
+	}
+
 	mux.Handle("GET /photo-dump", templ.Handler(components.PhotoDumpRoot()))
 
 	mux.Handle("POST /photo-dump/upload", http.HandlerFunc(photodump.UploadPhoto))
 
+	mux.Handle("GET /api/v1/photo-dump/photo", photodump.GetPhoto(store))
+	mux.Handle("POST /api/v1/photo-dump/photo", photodump.CreatePhoto(store))
+	mux.Handle("PUT /api/v1/photo-dump/photo", photodump.UpdatePhoto(store))
+	mux.Handle("DELETE /api/v1/photo-dump/photo", photodump.DeletePhoto(store))
+	mux.Handle("GET /api/v1/photo-dump/photos", photodump.GetPhotos(store))
 	return mux
 }
 
