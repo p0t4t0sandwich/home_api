@@ -191,8 +191,8 @@ func AnalyzePhoto(file multipart.File, header *multipart.FileHeader, photo *Phot
 
 // ------------------- API Routes -------------------
 
-// UploadPhoto - uploads a photo to the server
-func UploadPhoto(w http.ResponseWriter, r *http.Request) {
+// OldUploadPhoto - uploads a photo to the server
+func OldUploadPhoto(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(0)
 	if err != nil {
 		log.Println("Could not parse form", err)
@@ -303,18 +303,25 @@ func CreatePhotoFromFormData(r *http.Request) (*Photo, error, int) {
 		return nil, err, http.StatusInternalServerError
 	}
 
-	photo := Photo{ID: id}
+	photo := &Photo{ID: id}
 
 	file, header, err := r.FormFile("photo")
 	if err == http.ErrMissingFile {
 		log.Println("File not found")
 		return nil, errors.New("file not found"), http.StatusBadRequest
 	} else {
-		status, err := AnalyzePhoto(file, header, &photo)
+		status, err := AnalyzePhoto(file, header, photo)
 		if err != nil {
 			return nil, err, status
 		}
 	}
+	defer func(file multipart.File) {
+		err := file.Close()
+		if err != nil {
+			log.Println("Could not close file", err)
+		}
+	}(file)
+
 	if desc := r.Form.Get("description"); desc != "" {
 		photo.Description = desc
 	}
@@ -330,16 +337,17 @@ func CreatePhotoFromFormData(r *http.Request) (*Photo, error, int) {
 			photo.Tags = append(photo.Tags, Tags(tag))
 		}
 	}
-	return &photo, nil, http.StatusNoContent
+	return photo, nil, http.StatusNoContent
 }
 
-// CreatePhoto - Create a new photo
-func CreatePhoto(s *store) http.HandlerFunc {
+// UploadPhoto - Upload a new photo
+func UploadPhoto(s *store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var photo *Photo
 		var err error
 		var code int
-		if r.Header.Get("Content-Type") == "application/x-www-form-urlencoded" {
+
+		if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
 			photo, err, code = CreatePhotoFromFormData(r)
 		} else {
 			// photo, err, code = CreatePhotoFromJSON(r)

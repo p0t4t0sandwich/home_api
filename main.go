@@ -1,7 +1,7 @@
 package main
 
 import (
-	_ "embed"
+	"embed"
 	"fmt"
 	mw "home_api/src/middleware"
 	"home_api/src/routes"
