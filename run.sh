@@ -1,7 +1,8 @@
 #!/usr/bin/bash
 
-# Kill any process running on port 9080
-fuser -k 9080/tcp
+./build.sh
 
-go generate
-go run ./*.go
+cd data
+docker compose down
+
+docker compose up

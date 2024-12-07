@@ -1,16 +1,18 @@
 #!/bin/bash
 
-mkdir -p ./build
+docker build -t p0t4t0sandwich/home_api:latest .
+
+#mkdir -p ./build
 
 # Build
-go generate
-CGO_ENABLED=1 GOOS=linux go build -o ./build/home-api
+#go generate
+#CGO_ENABLED=1 GOOS=linux go build -o ./build/home-api
 # CGO_ENABLED=0 GOOS=windows go build -o ./build/home-api.exe
 
-cd ./build
+#cd ./build
 
 # Zip
-zip -r ./home-api.zip ./*
+#zip -r ./home-api.zip ./*
 
 # Notes
 # -- sudo apt install libexiv2-dev
