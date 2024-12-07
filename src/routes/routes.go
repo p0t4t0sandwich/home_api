@@ -1,11 +1,13 @@
 package routes
 
 import (
-	"github.com/a-h/templ"
 	"home_api/src/api/modules/photodump"
 	"home_api/src/api/modules/woolcatalogue"
+	"home_api/src/database"
 	"home_api/src/web/components"
 	"net/http"
+
+	"github.com/a-h/templ"
 )
 
 type Router func(*http.ServeMux) *http.ServeMux
@@ -35,6 +37,7 @@ func Home(mux *http.ServeMux) *http.ServeMux {
 }
 
 func PhotoDump(mux *http.ServeMux) *http.ServeMux {
+	db := database.GetDB("home")
 	store, err := photodump.Load()
 	if err != nil {
 		panic(err)

@@ -1,6 +1,7 @@
 package photodump
 
 import (
+	"context"
 	"errors"
 	"home_api/src/database"
 	"home_api/src/responses"
@@ -10,16 +11,18 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
 	"github.com/goccy/go-json"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kolesa-team/goexiv"
 )
 
 // ------------------- Types -------------------
 
+// Tags Type alias for the Tags "enum"
 type Tags string
 
 const (
@@ -27,13 +30,7 @@ const (
 	Christmas Tags = "christmas"
 )
 
-type Person struct {
-	Name string `json:"name"`
-}
-
-// File
-
-// Photo - Struct for a photo
+// Photo Struct for a photo
 type Photo struct {
 	ID          string    `json:"id"`
 	File        url.URL   `json:"file"`
@@ -42,11 +39,12 @@ type Photo struct {
 	TakenAt     time.Time `json:"taken_at,omitempty"`
 	UploadedAt  time.Time `json:"uploaded_at"`
 	ModifiedAt  time.Time `json:"modified_at"`
-	People      []Person  `json:"people,omitempty"`
+	People      []string  `json:"people,omitempty"`
 	Tags        []Tags    `json:"tags,omitempty"`
 }
 
-func (p Photo) TagsString() []string {
+// TagsString Converts the tags to strings, because type safety
+func (p *Photo) TagsString() []string {
 	var tags []string
 	for _, tag := range p.Tags {
 		tags = append(tags, string(tag))
@@ -54,94 +52,118 @@ func (p Photo) TagsString() []string {
 	return tags
 }
 
-func (p Photo) PeopleString() []string {
-	var names []string
-	for _, person := range p.People {
-		names = append(names, string(person.Name))
-	}
-	return names
+// Unrwap Unwraps the Photo struct into an array of fields
+func (p *Photo) Unwrap() []any {
+	return []any{p.ID, p.File, p.Description, p.Resolution, p.TakenAt,
+		p.UploadedAt, p.ModifiedAt, p.People, p.Tags}
 }
 
 // ------------------- Store -------------------
 
-// PhotoStore - Interface for the photo store
+// PhotoStore Interface for the photo store
 type PhotoStore interface {
-	GetPhoto(id int) (*Photo, error)
+	GetPhoto(id string) (*Photo, error)
 	CreatePhoto(photo *Photo) error
 	UpdatePhoto(photo *Photo) error
-	DeletePhoto(id int) error
+	DeletePhoto(id string) error
 }
 
+// store Private implementation of PhotoStore
 type store struct {
-	photos []Photo
+	db *pgxpool.Pool
 }
 
-func Load() (*store, error) {
-	// Hardcoded filename for now
-	filename := "./data/photostore.json"
-	file, err := os.ReadFile(filename)
+// NewStore Creates a new PhotoStore
+func NewStore(db *pgxpool.Pool) PhotoStore {
+	return &store{db: db}
+}
+
+// GetPhoto Get the specified Photo from the database
+func (s *store) GetPhoto(id string) (*Photo, error) {
+	rows, _ := s.db.Query(context.Background(), "SELECT * FROM photos WHERE id = $1", id)
+	photo, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[Photo])
 	if err != nil {
 		return nil, err
 	}
-	var photos []Photo
-	err = json.Unmarshal(file, &photos)
-	if err != nil {
-		return nil, err
-	}
-	return &store{
-		photos: photos,
-	}, nil
+	return photo, err
 }
 
-func (s *store) save() error {
-	// Hardcoded filename for now
-	filename := "./data/photostore.json"
-	data, err := json.Marshal(s.photos)
-	if err != nil {
-		return err
-	}
-	err = os.WriteFile(filename, data, 0644)
+const insertQuery string = `
+INSERT INTO photos
+(id, file, description, resolution, taken_at, uploaded_at, modified_at, people, tags)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`
+
+// CreatePhoto Create a Photo entry in the database
+func (s *store) CreatePhoto(p *Photo) error {
+	_, err := s.db.Exec(context.Background(), insertQuery, p.Unwrap()...)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *store) GetPhoto(id string) (*Photo, error) {
-	for _, photo := range s.photos {
-		if photo.ID == id {
-			return &photo, nil
-		}
+const updateQuery = `
+UPDATE photos SET
+file = $2, description = $3, resolution = $4, taken_at = $5,
+uploaded_at = $6, modified_at = $7, people = $8, tags = $9)
+WHERE id = $1`
+
+// UpdatePhoto Update a Photo in the database
+func (s *store) UpdatePhoto(p *Photo) error {
+	_, err := s.db.Exec(context.Background(), updateQuery, p.Unwrap()...)
+	if err != nil {
+		return err
 	}
-	return nil, errors.New("photo not found")
+	return nil
 }
 
-func (s *store) CreatePhoto(photo *Photo) error {
-	s.photos = append(s.photos, *photo)
-	return s.save()
-}
-
-func (s *store) UpdatePhoto(photo *Photo) error {
-	for i, w := range s.photos {
-		if w.ID == photo.ID {
-			s.photos[i] = *photo
-			return s.save()
-		}
-	}
-	return errors.New("photo not found")
-}
-
+// DeletePhoto Delete a Photo in the database
 func (s *store) DeletePhoto(id string) error {
-	for i, photo := range s.photos {
-		if photo.ID == id {
-			s.photos = append(s.photos[:i], s.photos[i+1:]...)
-			return s.save()
-		}
+	_, err := s.db.Query(context.Background(),
+		"DELETE FROM PICTURES WHERE id = $1", id)
+	if err != nil {
+		// TODO: Upstream Differentiate between Server and Client Errors
+		return err
 	}
-	return errors.New("photo not found")
+	return nil
 }
 
-// ------------------- Functions -------------------
+// ------------------- Service -------------------
+
+// PhotoService - Interface for the photo service
+type PhotoService interface {
+	GetPhoto(id string) (*Photo, error)
+	UploadPhoto(photo *Photo) error
+	EditPhoto(photo *Photo) error
+	SafeDeletePhoto(id string, conirm string) error
+}
+
+// service Private PhotoService implementation
+type service struct {
+	PhotoStore
+}
+
+// NewService Creates a new PhotoService
+func NewService(ps PhotoStore) PhotoService {
+	return &service{ps}
+}
+
+// UploadPhoto Upload a new Photo
+func (s *service) UploadPhoto(photo *Photo) error {
+	return s.CreatePhoto(photo)
+}
+
+// EditPhoto Edit a Photo in the database
+func (s *service) EditPhoto(photo *Photo) error {
+	return s.UpdatePhoto(photo)
+}
+
+func (s *service) SafeDeletePhoto(id string, confirm string) error {
+	// TODO: Check the photo's hash against the confirm string
+	return nil
+}
+
+// ------------------- Handlers -------------------
 
 // AnalyzePhoto - analyze a photo sent via multipartform
 func AnalyzePhoto(file multipart.File, header *multipart.FileHeader, photo *Photo) (int, error) {
@@ -328,7 +350,7 @@ func CreatePhotoFromFormData(r *http.Request) (*Photo, error, int) {
 	if people := r.Form.Get("people"); people != "" {
 		people := strings.Split(people, ",")
 		for _, name := range people {
-			photo.People = append(photo.People, Person{name})
+			photo.People = append(photo.People, name)
 		}
 	}
 	if tags := r.Form.Get("tags"); tags != "" {
@@ -403,7 +425,7 @@ func UpdatePhoto(s *store) http.HandlerFunc {
 			responses.BadRequest(w, r, "Could not decode photo")
 			return
 		}
-		err = s.UpdatePhoto(&photo)
+		err = s.EditPhoto(&photo)
 		if err != nil {
 			log.Println("Could not update photo", err)
 			responses.BadRequest(w, r, "Could not update photo")
@@ -423,6 +445,7 @@ func DeletePhoto(s *store) http.HandlerFunc {
 			responses.NotFound(w, r, "ID not found")
 			return
 		}
+		// TODO: USE SAFE METHOD
 		err := s.DeletePhoto(id)
 		if err != nil {
 			log.Println("Could not delete photo", err)
@@ -437,42 +460,42 @@ func DeletePhoto(s *store) http.HandlerFunc {
 // GetPhotos - Get a list of photos
 func GetPhotos(s *store) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		var amount int
-		var err error
-		strAmount := r.URL.Query().Get("amount")
-		if strAmount == "" {
-			amount = 12
-		} else {
-			amount, err = strconv.Atoi(strAmount)
-			if err != nil {
-				log.Println("Invalid amount", err)
-				responses.BadRequest(w, r, "Invalid amount")
-				return
-			}
-		}
-		var cursor int
-		strCursor := r.URL.Query().Get("cursor")
-		if strCursor == "" {
-			cursor = 0
-		} else {
-			cursor, err = strconv.Atoi(strCursor)
-			if err != nil {
-				log.Println("Invalid cursor", err)
-				responses.BadRequest(w, r, "Invalid cursor")
-				return
-			}
-		}
-		var photos []Photo
-		if cursor >= len(s.photos) {
-			responses.BadRequest(w, r, "Invalid cursor")
-			return
-		}
-		for i := cursor; i < cursor+amount; i++ {
-			if i >= len(s.photos) {
-				break
-			}
-			photos = append(photos, s.photos[i])
-		}
+		// var amount int
+		// var err error
+		// strAmount := r.URL.Query().Get("amount")
+		// if strAmount == "" {
+		// 	amount = 12
+		// } else {
+		// 	amount, err = strconv.Atoi(strAmount)
+		// 	if err != nil {
+		// 		log.Println("Invalid amount", err)
+		// 		responses.BadRequest(w, r, "Invalid amount")
+		// 		return
+		// 	}
+		// }
+		// var cursor int
+		// strCursor := r.URL.Query().Get("cursor")
+		// if strCursor == "" {
+		// 	cursor = 0
+		// } else {
+		// 	cursor, err = strconv.Atoi(strCursor)
+		// 	if err != nil {
+		// 		log.Println("Invalid cursor", err)
+		// 		responses.BadRequest(w, r, "Invalid cursor")
+		// 		return
+		// 	}
+		// }
+		// var photos []Photo
+		// if cursor >= len(s.photos) {
+		// 	responses.BadRequest(w, r, "Invalid cursor")
+		// 	return
+		// }
+		// for i := cursor; i < cursor+amount; i++ {
+		// 	if i >= len(s.photos) {
+		// 		break
+		// 	}
+		// 	photos = append(photos, s.photos[i])
+		// }
 		if r.Header.Get("Content-Type") == "" {
 			// responses.SendComponent(w, r, PhotoCards(photos))
 		} else {
