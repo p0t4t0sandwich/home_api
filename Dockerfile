@@ -30,9 +30,10 @@ RUN go build -o home_api .
 
 
 #FROM scratch AS release-stage
-FROM golang:1.23.4-bookworm AS release-stage
+FROM debian:bookworm AS release-stage
 
-COPY --from=build /usr/lib/x86_64-linux-gnu/libexiv2.so.27 /usr/lib/x86_64-linux-gnu
+RUN apt update && apt install -y libexiv2-dev
+# COPY --from=build /usr/lib/x86_64-linux-gnu/libexiv2.so.27 /usr/lib/x86_64-linux-gnu
 COPY --from=build /app/home_api .
 
 CMD ["./home_api"]

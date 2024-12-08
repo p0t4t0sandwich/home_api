@@ -9,18 +9,18 @@ import (
 )
 
 // -------------- Globals --------------
-var DATABASE_URL = os.Getenv("DATABASE_URL")
+var POSTGRES_URI = os.Getenv("POSTGRES_URI")
 
 // -------------- Functions --------------
 
 // GetDB - Get a connection pool to the database
 func GetDB(database string) *pgxpool.Pool {
-	if DATABASE_URL == "" {
-		log.Fatal("DATABASE_URL is not set")
+	if POSTGRES_URI == "" {
+		log.Fatal("POSTGRES_URI is not set")
 		return nil
 	}
 
-	PgPool, err := pgxpool.New(context.Background(), DATABASE_URL+"/"+database)
+	PgPool, err := pgxpool.New(context.Background(), POSTGRES_URI+"/"+database)
 	if err != nil {
 		log.Fatal("Unable to create connection pool:", err)
 		return nil
