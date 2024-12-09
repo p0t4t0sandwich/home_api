@@ -337,6 +337,7 @@ func (s *service) UploadPhoto(photo *Photo, file *os.File) (int, error) {
 		log.Println("could not read file info", err)
 		return http.StatusBadRequest, errors.New("could not read file info")
 	}
+	photo.TakenAt = info.ModTime()
 	photo.ModifiedAt = info.ModTime()
 
 	status, err := photo.GetImgData(&buf, bs)
@@ -376,6 +377,7 @@ func (s *service) EditPhoto(photo *Photo) (int, error) {
 		return status, err
 	}
 
+	photo.ModifiedAt = time.Now()
 	err = s.ps.UpdatePhoto(photo)
 	if err != nil {
 		log.Println("could not update photo", err)
