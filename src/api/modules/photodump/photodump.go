@@ -120,15 +120,25 @@ func (p *Photo) GetExivData(bs []byte) error {
 	if err == nil {
 		err = img.ReadMetadata()
 		if err == nil {
-			// map[string]string
+			// "yyyy:MM:dd HH:mm:ss"
+			var dt string
 			exif := img.GetExifData().AllTags()
-			log.Println(exif)
-			// Exif.Photo.PixelXDimension:4032 Exif.Photo.PixelYDimension:3024
-			// TODO: Find way to get time taken
-
-			// map[string]string
-			iptc := img.GetIptcData().AllTags()
-			log.Println(iptc)
+			dt = exif["Exif.Image.DateTimeOriginal"]
+			if dt == "" {
+				dt = exif["Exif.Photo.DateTimeOriginal"]
+			}
+			if dt == "" {
+				iptc := img.GetIptcData().AllTags()
+				dt = iptc["Date Created"]
+			}
+			if dt != "" {
+				dateStr := strings.Replace(dt, ":", "-", 2)
+				t, err := time.Parse(time.DateTime, dateStr)
+				if err == nil {
+					p.TakenAt = t
+					return nil
+				}
+			}
 		} else {
 			log.Println("could not retrieve photo metadata", err)
 		}
