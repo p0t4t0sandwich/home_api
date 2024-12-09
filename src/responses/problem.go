@@ -54,3 +54,19 @@ func (problem *problem) SendProblem(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(int(problem.Status))
 	w.Write(structBytes)
 }
+
+// ProblemCase Send the appropriate response given a status code and a message
+func SwitchCase(w http.ResponseWriter, r *http.Request, statusCode int, message string) {
+	switch statusCode {
+	case http.StatusBadRequest:
+		BadRequest(w, r, message)
+	case http.StatusUnauthorized:
+		Unauthorized(w, r, message)
+	case http.StatusForbidden:
+		Forbidden(w, r, message)
+	case http.StatusNotFound:
+		NotFound(w, r, message)
+	case http.StatusInternalServerError:
+		InternalServerError(w, r, message)
+	}
+}

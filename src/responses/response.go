@@ -13,7 +13,7 @@ import (
 
 // -------------- Structs --------------
 
-// ProtoEncoder -- Interface for encoding a struct as a protobuf message
+// ProtoEncoder Interface for encoding a struct as a protobuf message
 // Useful for complex types that don't conform to auto-generated protobuf structs
 type ProtoEncoder interface {
 	ToProto() proto.Message
@@ -21,7 +21,7 @@ type ProtoEncoder interface {
 
 // -------------- Functions --------------
 
-// SendStruct -- Send a struct as JSON, XML or Protobuf
+// SendStruct Send a struct as JSON, XML or Protobuf
 func SendStruct[T any](w http.ResponseWriter, r *http.Request, statusCode int, data T) {
 	var content = "application/"
 	var structBytes []byte
@@ -52,7 +52,7 @@ func SendStruct[T any](w http.ResponseWriter, r *http.Request, statusCode int, d
 	}
 }
 
-// DecodeStruct -- Decode a struct from JSON, XML or Protobuf
+// DecodeStruct Decode a struct from JSON, XML or Protobuf
 func DecodeStruct[T any](r *http.Request, data *T) error {
 	var err error
 	switch contentType := r.Header.Get("Content-Type"); contentType {
@@ -76,7 +76,7 @@ func DecodeStruct[T any](r *http.Request, data *T) error {
 	return err
 }
 
-// Success -- Send a success response as JSON or XML
+// Success Send a success response
 func Success(w http.ResponseWriter, r *http.Request, message string) {
 	if message == "" {
 		message = "The request was successful."
@@ -89,7 +89,7 @@ func Success(w http.ResponseWriter, r *http.Request, message string) {
 	}
 }
 
-// SuccessHTML -- Send a success response as HTML
+// SuccessHTML Send a success response as HTML
 func SuccessHTML(w http.ResponseWriter, r *http.Request, html string) {
 	w.Header().Set("Content-Type", "text/html")
 	_, err := w.Write([]byte(html))
@@ -99,7 +99,7 @@ func SuccessHTML(w http.ResponseWriter, r *http.Request, html string) {
 	}
 }
 
-// SendComponent -- Send a component as a success response
+// SendComponent Send a component as a success response
 func SendComponent(w http.ResponseWriter, r *http.Request, component templ.Component) {
 	w.Header().Set("Content-Type", "text/component")
 	err := component.Render(context.Background(), w)
@@ -109,22 +109,22 @@ func SendComponent(w http.ResponseWriter, r *http.Request, component templ.Compo
 	}
 }
 
-// StructOK -- Send a struct as a success response
+// StructOK Send a struct as a success response
 func StructOK[T any](w http.ResponseWriter, r *http.Request, data T) {
 	SendStruct(w, r, http.StatusOK, data)
 }
 
-// StructCreated -- Send a struct as a created response
+// StructCreated Send a struct as a created response
 func StructCreated[T any](w http.ResponseWriter, r *http.Request, data T) {
 	SendStruct(w, r, http.StatusCreated, data)
 }
 
-// NoContent -- Send a no content response
+// NoContent Send a no content response
 func NoContent(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-// BadRequest - Send and encode an invalid input problem
+// BadRequest Send and encode an invalid input problem
 func BadRequest(w http.ResponseWriter, r *http.Request, message string) {
 	if message == "" {
 		message = "The request body is invalid."
@@ -138,7 +138,7 @@ func BadRequest(w http.ResponseWriter, r *http.Request, message string) {
 	).SendProblem(w, r)
 }
 
-// Unauthorized -- Send an UnauthorizedResponse as JSON or XML
+// Unauthorized Send an UnauthorizedResponse as JSON or XML
 func Unauthorized(w http.ResponseWriter, r *http.Request, message string) {
 	if message == "" {
 		message = "You must be logged in to access this resource."
@@ -152,7 +152,7 @@ func Unauthorized(w http.ResponseWriter, r *http.Request, message string) {
 	).SendProblem(w, r)
 }
 
-// Forbidden -- Send a ForbiddenResponse as JSON or XML
+// Forbidden Send a ForbiddenResponse as JSON or XML
 func Forbidden(w http.ResponseWriter, r *http.Request, message string) {
 	if message == "" {
 		message = "You do not have permission to access this resource."
@@ -166,7 +166,7 @@ func Forbidden(w http.ResponseWriter, r *http.Request, message string) {
 	).SendProblem(w, r)
 }
 
-// NotFound -- Send a NotFoundResponse as JSON or XML
+// NotFound Send a NotFoundResponse as JSON or XML
 func NotFound(w http.ResponseWriter, r *http.Request, message string) {
 	if message == "" {
 		message = "The requested resource could not be found."

@@ -14,6 +14,7 @@ require (
 )
 
 require (
+	github.com/chai2010/webp v1.1.1 // indirect
 	github.com/corona10/goimagehash v1.1.0 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect

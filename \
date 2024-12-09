@@ -18,7 +18,6 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/url"
-	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -57,88 +56,6 @@ type Photo struct {
 	Tags        []Tags    `json:"tags" db:"tags"`
 }
 
-// GetImgData Get the image data from a file and add it to the photo
-func (p *Photo) GetImgData(r io.Reader, bs []byte) (int, error) {
-	fileType := http.DetectContentType(bs)
-	if fileType[:6] != "image/" {
-		return http.StatusBadRequest, errors.New("file is not an image")
-	}
-
-	var err error
-	var img image.Image
-	var ext string
-	switch fileType {
-	case "image/jpeg":
-		ext = "jpg"
-		img, err = jpeg.Decode(r)
-		break
-	case "image/png":
-		ext = "png"
-		img, err = png.Decode(r)
-		break
-	case "image/gif":
-		ext = "gif"
-		img, err = gif.Decode(r)
-		break
-	case "image/webp":
-		ext = "webp"
-		img, err = webp.Decode(r)
-		break
-	default:
-		log.Println("unsupported image type: " + fileType)
-		return http.StatusBadRequest, errors.New("unsupported image type: " + fileType)
-	}
-	if err != nil {
-		log.Println("error reading image", err)
-		return http.StatusBadRequest, errors.New("error reading image")
-	}
-	p.Ext = ext
-
-	ph, err := goimagehash.PerceptionHash(img)
-	if err != nil {
-		log.Println("error generating phash", err)
-		return http.StatusBadRequest, errors.New("error generating phash")
-	}
-	iph := ph.GetHash()
-	phash := make([]byte, 8)
-	binary.LittleEndian.PutUint64(phash, iph)
-	p.PHash = phash
-
-	sha := sha256.Sum256(bs)
-	p.Hash = hex.EncodeToString(sha[:])
-
-	w := strconv.Itoa(img.Bounds().Dx())
-	h := strconv.Itoa(img.Bounds().Dy())
-	p.Resolution = w + "x" + h + "p"
-
-	return http.StatusCreated, nil
-}
-
-// GetExivData Get Exiv2 data from a file and and add it to the photo
-func (p *Photo) GetExivData(bs []byte) error {
-	img, err := goexiv.OpenBytes(bs)
-	if err == nil {
-		err = img.ReadMetadata()
-		if err == nil {
-			// map[string]string
-			exif := img.GetExifData().AllTags()
-			log.Println(exif)
-			// Exif.Photo.PixelXDimension:4032 Exif.Photo.PixelYDimension:3024
-			// TODO: Find way to get time taken
-
-			// map[string]string
-			iptc := img.GetIptcData().AllTags()
-			log.Println(iptc)
-		} else {
-			log.Println("could not retrieve photo metadata", err)
-		}
-	} else {
-		log.Println("could not retrieve photo metadata", err)
-	}
-
-	return nil
-}
-
 // TagsString Converts the tags to strings, because type safety
 func (p *Photo) TagsString() []string {
 	var tags []string
@@ -150,7 +67,7 @@ func (p *Photo) TagsString() []string {
 
 // Unrwap Unwraps the Photo struct into an array of fields
 func (p *Photo) Unwrap() []any {
-	return []any{p.ID, p.File, p.Ext, p.Hash, p.PHash, p.Description, p.Resolution,
+	return []any{p.ID, p.File, p.Ext, p.Hash, p.Description, p.Resolution,
 		p.TakenAt, p.UploadedAt, p.ModifiedAt, p.People, p.Tags}
 }
 
@@ -159,7 +76,7 @@ func (p *Photo) Unwrap() []any {
 // PhotoStore Interface for the photo store
 type PhotoStore interface {
 	GetPhotoById(id string) (*Photo, error)
-	GetPhotoByHash(hash string) (*Photo, error)
+	GetPhotoByHash(hash []byte) (*Photo, error)
 	CountLikePhotos(phash []byte, hd int) (int, error)
 	CreatePhoto(photo *Photo) error
 	UpdatePhoto(photo *Photo) error
@@ -187,7 +104,7 @@ func (s *store) GetPhotoById(id string) (*Photo, error) {
 }
 
 // GetPhotoByHash Get the specified Photo from the database
-func (s *store) GetPhotoByHash(hash string) (*Photo, error) {
+func (s *store) GetPhotoByHash(hash []byte) (*Photo, error) {
 	rows, _ := s.db.Query(context.Background(), "SELECT * FROM photos WHERE hash = $1", hash)
 	photo, err := pgx.CollectExactlyOneRow(rows, pgx.RowToAddrOfStructByName[Photo])
 	if err != nil {
@@ -213,9 +130,8 @@ func (s *store) CountLikePhotos(phash []byte, hd int) (int, error) {
 
 const insertQuery string = `
 INSERT INTO photos
-(id, file, ext, hash, phash, description, resolution,
-taken_at, uploaded_at, modified_at, people, tags)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+(id, file, ext, hash, description, resolution, taken_at, uploaded_at, modified_at, people, tags)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`
 
 // CreatePhoto Create a Photo entry in the database
 func (s *store) CreatePhoto(p *Photo) error {
@@ -228,8 +144,8 @@ func (s *store) CreatePhoto(p *Photo) error {
 
 const updateQuery = `
 UPDATE photos SET
-file = $2, ext = $3, hash = $4, phash = $5, description = $6, resolution = $7,
-taken_at = $8, uploaded_at = $9, modified_at = $10, people = $11, tags = $12)
+file = $2, ext = $3, hash = $4, description = $5, resolution = $6,
+taken_at = $7, uploaded_at = $8, modified_at = $9, people = $10, tags = $11)
 WHERE id = $1`
 
 // UpdatePhoto Update a Photo in the database
@@ -256,11 +172,11 @@ func (s *store) DeletePhoto(id string) error {
 // PhotoService - Interface for the photo service
 type PhotoService interface {
 	store() PhotoStore
-	GetPhotoById(id string) (*Photo, int, error)
-	GetPhotoByHash(hash string) (*Photo, int, error)
-	UploadPhoto(photo *Photo, file *os.File) (int, error)
-	EditPhoto(photo *Photo) (int, error)
-	SafeDeletePhoto(id string, confirm string) (int, error)
+	GetPhotoById(id string) (*Photo, error)
+	GetPhotoByHash(hash []byte) (*Photo, error)
+	UploadPhoto(photo *Photo, reader io.Reader) error
+	EditPhoto(photo *Photo) error
+	SafeDeletePhoto(id string, conirm string) error
 }
 
 // service Private PhotoService implementation
@@ -279,70 +195,130 @@ func (s *service) store() PhotoStore {
 }
 
 // GetPhotoById Get the specified Photo from the database
-func (s *service) GetPhotoById(id string) (*Photo, int, error) {
-	// TODO: Differentiate between Server and Client caused db Errors
+func (s *service) GetPhotoById(id string) (*Photo, error) {
 	photo, err := s.ps.GetPhotoById(id)
 	if err != nil {
-		log.Println("could not get photo", err)
-		return nil, http.StatusNotFound, errors.New("photo does not exist")
+		log.Println("Could not get photo", err)
+		return nil, errors.New("photo does not exist")
 	}
-	return photo, http.StatusOK, nil
+	return photo, nil
 }
 
 // GetPhotoByHash Get the specified Photo from the database
-func (s *service) GetPhotoByHash(hash string) (*Photo, int, error) {
-	// TODO: Differentiate between Server and Client caused db Errors
+func (s *service) GetPhotoByHash(hash []byte) (*Photo, error) {
 	photo, err := s.ps.GetPhotoByHash(hash)
 	if err != nil {
-		log.Println("could not get photo", err)
-		return nil, http.StatusNotFound, errors.New("photo does not exist")
+		log.Println("Could not get photo", err)
+		return nil, errors.New("photo does not exist")
 	}
-	return photo, http.StatusOK, nil
+	return photo, nil
+}
+
+func (p *Photo) GetImgData(r io.Reader, bs []byte) error {
+	fileType := http.DetectContentType(bs)
+	if fileType[:6] != "image/" {
+		log.Println("file is not an image")
+		return errors.New("file is not an image") // Bad request
+	}
+
+	var err error
+	var img image.Image
+	var ext string
+	switch fileType {
+	case "image/jpeg":
+		ext = "jpg"
+		img, err = jpeg.Decode(r)
+		break
+	case "image/png":
+		ext = "png"
+		img, err = png.Decode(r)
+		break
+	case "image/gif":
+		ext = "gif"
+		img, err = gif.Decode(r)
+		break
+	case "image/webp":
+		ext = "webp"
+		img, err = webp.Decode(r)
+		break
+	default:
+		log.Println("unsupported image type: " + fileType)
+		return errors.New("unsupported image type: " + fileType)
+	}
+	if err != nil {
+		log.Println("error reading image", err)
+		return errors.New("error reading image")
+	}
+	p.Ext = ext
+
+	ph, err := goimagehash.PerceptionHash(img)
+	if err != nil {
+		log.Println("error generating phash", err)
+		return err
+	}
+	iph := ph.GetHash()
+	phash := make([]byte, 8)
+	binary.LittleEndian.PutUint64(phash, iph)
+	p.PHash = phash
+
+	sha := sha256.Sum256(bs)
+	p.Hash = hex.EncodeToString(sha[:])
+
+	w := strconv.Itoa(img.Bounds().Dx())
+	h := strconv.Itoa(img.Bounds().Dy())
+	p.Resolution = w + "x" + h + "p"
+
+	return nil
+}
+
+func (p *Photo) GetExivData(bs []byte) error {
+	img, err := goexiv.OpenBytes(bs)
+	if err == nil {
+		err = img.ReadMetadata()
+		if err == nil {
+			// map[string]string
+			exif := img.GetExifData().AllTags()
+			log.Println(exif)
+			// Exif.Photo.PixelXDimension:4032 Exif.Photo.PixelYDimension:3024
+			// TODO: Find way to get time taken
+
+			// map[string]string
+			iptc := img.GetIptcData().AllTags()
+			log.Println(iptc)
+		} else {
+			log.Println("could not retrieve photo metadata", err)
+		}
+	} else {
+		log.Println("could not retrieve photo metadata", err)
+	}
+
+	return nil
 }
 
 // UploadPhoto Upload a new Photo
-func (s *service) UploadPhoto(photo *Photo, file *os.File) (int, error) {
-	// TODO: Differentiate between Server and Client caused db Errors
+func (s *service) UploadPhoto(photo *Photo, r io.Reader) error {
 	id, err := database.GenSnowflake()
 	if err != nil {
 		log.Println("could not generate id", err)
-		return http.StatusInternalServerError, errors.New("could not generate id")
+		return errors.New("could not generate id")
 	}
 	photo.ID = id
 
 	var buf bytes.Buffer
-	tee := io.TeeReader(file, &buf)
+	tee := io.TeeReader(r, &buf)
 	bs, err := io.ReadAll(tee)
 	if err != nil && err != io.EOF {
 		log.Println("could not read file contents", err)
-		return http.StatusBadRequest, errors.New("could not read file contents")
+		return errors.New("could not read file contents")
 	}
 	if len(bs) == 0 {
 		log.Println("file is empty", err)
-		return http.StatusBadRequest, errors.New("file is empty")
+		return errors.New("file is empty")
 	}
 
-	info, err := file.Stat()
+	err = photo.GetImgData(&buf, bs)
 	if err != nil {
-		log.Println("could not read file info", err)
-		return http.StatusBadRequest, errors.New("could not read file info")
-	}
-	photo.ModifiedAt = info.ModTime()
-
-	status, err := photo.GetImgData(&buf, bs)
-	if err != nil {
-		return http.StatusBadRequest, err
-	}
-
-	var hd int
-	var limit int
-	count, err := s.ps.CountLikePhotos(photo.PHash, hd)
-	if err != nil {
-		log.Println("failed to count like photos", err)
-		return http.StatusInternalServerError, errors.New("failed to count like photos")
-	}
-	if count >= limit {
-		return http.StatusBadRequest, errors.New("duplicate image")
+		return errors.New("could not read image")
 	}
 
 	err = photo.GetExivData(bs)
@@ -350,56 +326,48 @@ func (s *service) UploadPhoto(photo *Photo, file *os.File) (int, error) {
 		log.Println("Exiv analysis failed", err)
 	}
 
+	// TODO: Check to see if hash already exists
+	// photo, err := s.ps.CountLikePhotos()
+
 	// err = s.ps.CreatePhoto(photo)
-	// if err != nil {
-	// 	log.Println("could not upload photo", err)
-	// 	return http.StatusInternalServerError, errors.New("could not upload photo")
-	// }
-	return status, nil
+	if err != nil {
+		log.Println("could not upload photo", err)
+		return errors.New("could not upload photo")
+	}
+	return nil
 }
 
 // EditPhoto Edit a Photo in the database
-func (s *service) EditPhoto(photo *Photo) (int, error) {
-	// TODO: Differentiate between Server and Client caused db Errors
-	photo, status, err := s.GetPhotoById(photo.ID)
+func (s *service) EditPhoto(photo *Photo) error {
+	_, err := s.ps.GetPhotoById(photo.ID)
 	if err != nil {
-		return status, err
+		log.Println("photo does not exist", err)
+		return errors.New("photo does not exist")
 	}
 
 	err = s.ps.UpdatePhoto(photo)
 	if err != nil {
 		log.Println("could not update photo", err)
-		return http.StatusInternalServerError, errors.New("could not update photo")
+		return errors.New("could not update photo")
 	}
-	return http.StatusNoContent, nil
+	return nil
 }
 
 // SafeDeletePhoto Delete a photo if the confirmation string matches the hash
-func (s *service) SafeDeletePhoto(id string, confirm string) (int, error) {
-	// TODO: Differentiate between Server and Client caused db Errors
-	photo, status, err := s.GetPhotoById(id)
-	if err != nil {
-		return status, err
-	}
-	if photo.Hash != confirm {
-		return http.StatusBadRequest, errors.New("confirmation hash does not match photo hash")
-	}
-	err = s.ps.DeletePhoto(id)
-	if err != nil {
-		log.Println("could not delete photo", err)
-		return http.StatusInternalServerError, errors.New("could not delete photo")
-	}
-	return http.StatusNoContent, nil
+func (s *service) SafeDeletePhoto(id string, confirm string) error {
+	// TODO: Differentiate between Server and Client Errors
+	// TODO: Check the photo's hash against the confirm string
+	return nil
 }
 
-// ------------------- Functions -------------------
+// ------------------- Handlers -------------------
 
 // CreatePhotoFromFormData - Create a new photo from form data
-func CreatePhotoFromFormData(s PhotoService, r *http.Request) (*Photo, int, error) {
+func CreatePhotoFromFormData(s PhotoService, r *http.Request) (*Photo, error, int) {
 	err := r.ParseMultipartForm(0)
 	if err != nil {
-		log.Println("could not parse form", err)
-		return nil, http.StatusBadRequest, errors.New("could not parse form")
+		log.Println("Could not parse form", err)
+		return nil, err, http.StatusBadRequest
 	}
 
 	photo := &Photo{}
@@ -419,72 +387,76 @@ func CreatePhotoFromFormData(s PhotoService, r *http.Request) (*Photo, int, erro
 		}
 	}
 
-	mFile, _, err := r.FormFile("photo")
+	file, _, err := r.FormFile("photo")
 	if err == http.ErrMissingFile {
-		log.Println("file not uploaded")
-		return nil, http.StatusBadRequest, errors.New("file not uploaded")
+		log.Println("File not found")
+		return nil, errors.New("file not found"), http.StatusBadRequest
 	} else {
-		file, ok := mFile.(*os.File)
-		if !ok {
-			return nil, http.StatusBadRequest, errors.New("invalid file")
-		}
-		status, err := s.UploadPhoto(photo, file)
+		status := http.StatusNoContent // TODO: Implement upstream
+		
+        err = s.UploadPhoto(photo, file)
 		if err != nil {
-			return nil, status, err
+			return nil, err, status
 		}
 	}
 	defer func(file multipart.File) {
 		err := file.Close()
 		if err != nil {
-			log.Println("could not close file", err)
+			log.Println("Could not close file", err)
 		}
-	}(mFile)
+	}(file)
 
-	return photo, http.StatusCreated, nil
+	return photo, nil, http.StatusNoContent
 }
 
-// ------------------- Handlers -------------------
-
-// UploadPhoto Upload a new photo
+// UploadPhoto - Upload a new photo
 func UploadPhoto(s PhotoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var photo *Photo
 		var err error
-		var status int
+		var code int
 
 		if strings.Contains(r.Header.Get("Content-Type"), "multipart/form-data") {
-			photo, status, err = CreatePhotoFromFormData(s, r)
+			photo, err, code = CreatePhotoFromFormData(s, r)
 		} else {
 			// photo, err, code = CreatePhotoFromJSON(r)
 		}
 		if err != nil {
-			responses.SwitchCase(w, r, status, err.Error())
-			return
+			switch code {
+			case http.StatusBadRequest:
+				responses.BadRequest(w, r, "Could not create photo")
+				return
+			case http.StatusInternalServerError:
+				responses.InternalServerError(w, r, "Could not create photo")
+				return
+			}
 		}
-		log.Println("photo", photo.ID, "created successfully")
-		responses.StructCreated(w, r, &photo)
+		log.Println("Photo", photo.ID, "created successfully")
+		responses.StructCreated(w, r, "Photo created successfully")
 	}
 }
 
-// GetPhoto Get a photo
+// GetPhoto - Get a photo
 func GetPhoto(s PhotoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		id := r.URL.Query().Get("id")
 		if id == "" {
-			responses.BadRequest(w, r, "no ID in the query")
+			log.Println("ID not found")
+			responses.NotFound(w, r, "ID not found")
 			return
 		}
-		photo, status, err := s.GetPhotoById(id)
+		photo, err := s.GetPhotoById(id)
 		if err != nil {
-			responses.SwitchCase(w, r, status, err.Error())
+			log.Println("Photo not found", err)
+			responses.NotFound(w, r, "Photo not found")
 			return
 		}
-		log.Println("photo", photo.ID, "found")
+		log.Println("Photo", photo.ID, "found")
 		responses.StructOK(w, r, photo)
 	}
 }
 
-// UpdatePhoto Update a photo
+// UpdatePhoto - Update a photo
 func UpdatePhoto(s PhotoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		photo := Photo{}
@@ -494,32 +466,31 @@ func UpdatePhoto(s PhotoService) http.HandlerFunc {
 			responses.BadRequest(w, r, "Could not decode photo")
 			return
 		}
-		status, err := s.EditPhoto(&photo)
+		err = s.EditPhoto(&photo)
 		if err != nil {
-			responses.SwitchCase(w, r, status, err.Error())
+			log.Println("Could not update photo", err)
+			responses.BadRequest(w, r, "Could not update photo")
 			return
 		}
-		log.Println("photo", photo.ID, "updated successfully")
-		responses.Success(w, r, "photo updated successfully")
+		log.Println("Photo", photo.ID, "updated successfully")
+		responses.Success(w, r, "Photo updated successfully")
 	}
 }
 
-// DeletePhoto Delete a photo
+// DeletePhoto - Delete a photo
 func DeletePhoto(s PhotoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// Get the ID from the URL
 		id := r.URL.Query().Get("id")
 		if id == "" {
 			responses.BadRequest(w, r, "no ID in the query")
 			return
 		}
-		confirm := r.URL.Query().Get("confirm")
-		if confirm == "" {
-			responses.BadRequest(w, r, "no confirm hash in the query")
-			return
-		}
-		status, err := s.SafeDeletePhoto(id, confirm)
+		// TODO: USE SAFE METHOD
+		err := s.SafeDeletePhoto(id, "TODO")
 		if err != nil {
-			responses.SwitchCase(w, r, status, err.Error())
+			log.Println("Could not delete photo", err)
+			responses.NotFound(w, r, "Could not delete photo")
 			return
 		}
 		log.Println("Photo", id, "deleted successfully")
