@@ -8,12 +8,17 @@ import (
 	"github.com/minio/minio-go/v7/pkg/credentials"
 )
 
-func GetS3() *minio.Client {
-	endpoint := os.Getenv("S3_API_URL")
-	accessKeyID := os.Getenv("S3_ACCESS_KEY")
-	secretAccessKey := os.Getenv("S3_SECRET_KEY")
-	useSSL := os.Getenv("S3_USE_SSL") == "true"
+// -------------- Globals --------------
 
+var endpoint = os.Getenv("S3_API_URL")
+var accessKeyID = os.Getenv("S3_ACCESS_KEY")
+var secretAccessKey = os.Getenv("S3_SECRET_KEY")
+var useSSL = os.Getenv("S3_USE_SSL") == "true"
+
+// -------------- Functions --------------
+
+// GetS3 Get minio S3 client
+func GetS3() *minio.Client {
 	minioClient, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKeyID, secretAccessKey, ""),
 		Secure: useSSL,

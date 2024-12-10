@@ -8,7 +8,11 @@ import (
 	"github.com/kkrypt0nn/spaceflake"
 )
 
+// -------------- Globals --------------
+
 var settings = initSnowflake()
+
+// -------------- Functions --------------
 
 // initSnowflake initializes the snowflake generator
 func initSnowflake() spaceflake.GeneratorSettings {

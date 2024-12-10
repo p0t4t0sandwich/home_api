@@ -29,6 +29,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/kolesa-team/goexiv"
+	"github.com/minio/minio-go/v7"
 )
 
 // ------------------- Types -------------------
@@ -58,16 +59,11 @@ type Photo struct {
 }
 
 // GetImgData Get the image data from a file and add it to the photo
-func (p *Photo) GetImgData(r io.Reader, bs []byte) (int, error) {
-	fileType := http.DetectContentType(bs)
-	if fileType[:6] != "image/" {
-		return http.StatusBadRequest, errors.New("file is not an image")
-	}
-
+func (p *Photo) GetImgData(r io.Reader, bs []byte, contentType string) (int, error) {
 	var err error
 	var img image.Image
 	var ext string
-	switch fileType {
+	switch contentType {
 	case "image/jpeg":
 		ext = "jpg"
 		img, err = jpeg.Decode(r)
@@ -85,8 +81,8 @@ func (p *Photo) GetImgData(r io.Reader, bs []byte) (int, error) {
 		img, err = webp.Decode(r)
 		break
 	default:
-		log.Println("unsupported image type: " + fileType)
-		return http.StatusBadRequest, errors.New("unsupported image type: " + fileType)
+		log.Println("unsupported image type: " + contentType)
+		return http.StatusBadRequest, errors.New("unsupported image type: " + contentType)
 	}
 	if err != nil {
 		log.Println("error reading image", err)
@@ -174,16 +170,19 @@ type PhotoStore interface {
 	CreatePhoto(photo *Photo) error
 	UpdatePhoto(photo *Photo) error
 	DeletePhoto(id string) error
+	UploadPhotoToS3(photo *Photo, r io.Reader, length int64, contentType string) error
+	DeletePhotoFromS3(id string) error
 }
 
 // store Private implementation of PhotoStore
 type store struct {
 	db *pgxpool.Pool
+	s3 *minio.Client
 }
 
 // NewStore Creates a new PhotoStore
-func NewStore(db *pgxpool.Pool) PhotoStore {
-	return &store{db: db}
+func NewStore(db *pgxpool.Pool, s3 *minio.Client) PhotoStore {
+	return &store{db, s3}
 }
 
 // GetPhotoById Get the specified Photo from the database
@@ -208,7 +207,7 @@ func (s *store) GetPhotoByHash(hash string) (*Photo, error) {
 
 const checkpHashQuery = `
 SELECT COUNT(*) FROM photos
-WHERE bit_count(phash ^ $1) >= $2`
+WHERE BIT_COUNT(xor_digests(phash, $1)) <= $2`
 
 // CountLikePhotos Return the number of similar photos
 func (s *store) CountLikePhotos(phash []byte, hd int) (int, error) {
@@ -261,9 +260,27 @@ func (s *store) DeletePhoto(id string) error {
 	return nil
 }
 
+// UploadPhotoToS3 Upload a photo to S3
+func (s *store) UploadPhotoToS3(photo *Photo, r io.Reader, length int64, contentType string) error {
+	info, err := s.s3.PutObject(
+		context.Background(), "photos", photo.ID, r, length,
+		minio.PutObjectOptions{ContentType: contentType})
+	if err != nil {
+		return err
+	}
+	log.Println(info.Location)
+	return nil
+}
+
+// DeletePhotoFromS3 Delete a photo from S3
+func (s *store) DeletePhotoFromS3(id string) error {
+	// TODO: Implement
+	return nil
+}
+
 // ------------------- Service -------------------
 
-// PhotoService - Interface for the photo service
+// PhotoService Interface for the photo service
 type PhotoService interface {
 	store() PhotoStore
 	GetPhotoById(id string) (*Photo, int, error)
@@ -320,9 +337,7 @@ func (s *service) UploadPhoto(photo *Photo, file *os.File) (int, error) {
 	}
 	photo.ID = id
 
-	var buf bytes.Buffer
-	tee := io.TeeReader(file, &buf)
-	bs, err := io.ReadAll(tee)
+	bs, err := io.ReadAll(file)
 	if err != nil && err != io.EOF {
 		log.Println("could not read file contents", err)
 		return http.StatusBadRequest, errors.New("could not read file contents")
@@ -340,7 +355,14 @@ func (s *service) UploadPhoto(photo *Photo, file *os.File) (int, error) {
 	photo.TakenAt = info.ModTime()
 	photo.ModifiedAt = info.ModTime()
 
-	status, err := photo.GetImgData(&buf, bs)
+	contentType := http.DetectContentType(bs)
+	if contentType[:6] != "image/" {
+		return http.StatusBadRequest, errors.New("file is not an image")
+	}
+
+	nbs := make([]byte, len(bs))
+	copy(nbs, bs)
+	status, err := photo.GetImgData(bytes.NewBuffer(nbs), bs, contentType)
 	if err != nil {
 		return http.StatusBadRequest, err
 	}
@@ -360,6 +382,10 @@ func (s *service) UploadPhoto(photo *Photo, file *os.File) (int, error) {
 	if err != nil {
 		log.Println("Exiv analysis failed", err)
 	}
+
+	nbs = make([]byte, len(bs))
+	copy(nbs, bs)
+	err = s.ps.UploadPhotoToS3(photo, bytes.NewBuffer(nbs), info.Size(), contentType)
 
 	// err = s.ps.CreatePhoto(photo)
 	// if err != nil {
@@ -395,6 +421,11 @@ func (s *service) SafeDeletePhoto(id string, confirm string) (int, error) {
 	}
 	if photo.Hash != confirm {
 		return http.StatusBadRequest, errors.New("confirmation hash does not match photo hash")
+	}
+	err = s.ps.DeletePhotoFromS3(id)
+	if err != nil {
+		log.Println("could not remove photo from S3", err)
+		return http.StatusInternalServerError, errors.New("could not remove photo from S3")
 	}
 	err = s.ps.DeletePhoto(id)
 	if err != nil {
