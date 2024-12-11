@@ -14,6 +14,13 @@ var endpoint = os.Getenv("S3_API_URL")
 var accessKeyID = os.Getenv("S3_ACCESS_KEY")
 var secretAccessKey = os.Getenv("S3_SECRET_KEY")
 var useSSL = os.Getenv("S3_USE_SSL") == "true"
+var S3_FILE_URI = func() string {
+	proto := "http://"
+	if useSSL {
+		proto = "https://"
+	}
+	return proto + endpoint
+}()
 
 // -------------- Functions --------------
 

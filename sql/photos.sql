@@ -9,15 +9,8 @@ CREATE TABLE photos (
     taken_at TIMESTAMP WITH TIME ZONE,
     uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL,
     modified_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    people_ids TEXT[],
+    subjects TEXT[],
     tags TEXT[]
-);
-
-CREATE TABLE people (
-    id TEXT NOT NULL PRIMARY KEY,
-    name TEXT NOT NULL,
-    surname TEXT,
-    notes TEXT
 );
 
 -- https://stackoverflow.com/questions/17739887/how-to-xor-md5-hash-values-and-cast-them-to-hex-in-postgresql
