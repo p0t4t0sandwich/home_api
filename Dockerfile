@@ -14,9 +14,8 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy over files
+COPY Makefile tailwindcss tailwind.config.js ./
 COPY main.go .
-COPY public ./public
-COPY tailwindcss tailwind.config.js go.mod go.sum Makefile ./
 COPY src src
 
 # Run make

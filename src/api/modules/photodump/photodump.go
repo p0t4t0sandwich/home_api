@@ -49,12 +49,13 @@ type Photo struct {
 	Hash        string    `json:"hash" db:"hash"`
 	PHash       []byte    `json:"phash" db:"phash"`
 	Description string    `json:"description" db:"description"`
+	Source      string    `json:"source" db:"source"`
+	Subjects    []string  `json:"subjects" db:"subjects"`
+	Tags        []Tags    `json:"tags" db:"tags"`
 	Resolution  string    `json:"resolution" db:"resolution"`
 	TakenAt     time.Time `json:"taken_at" db:"taken_at"`
 	UploadedAt  time.Time `json:"uploaded_at" db:"uploaded_at"`
 	ModifiedAt  time.Time `json:"modified_at" db:"modified_at"`
-	Subjects    []string  `json:"subjects" db:"subjects"`
-	Tags        []Tags    `json:"tags" db:"tags"`
 }
 
 // GetImgData Get the image data from a file and add it to the photo
@@ -154,8 +155,9 @@ func (p *Photo) TagsString() []string {
 
 // Unrwap Unwraps the Photo struct into an array of fields
 func (p *Photo) Unwrap() []any {
-	return []any{p.ID, p.File, p.Ext, p.Hash, p.PHash, p.Description, p.Resolution,
-		p.TakenAt, p.UploadedAt, p.ModifiedAt, p.Subjects, p.Tags}
+	return []any{p.ID, p.File, p.Ext, p.Hash, p.PHash,
+		p.Description, p.Source, p.Subjects, p.Tags,
+		p.Resolution, p.TakenAt, p.UploadedAt, p.ModifiedAt}
 }
 
 // ------------------- Store -------------------
@@ -232,9 +234,10 @@ func (s *store) CountLikePhotos(phash []byte, hd int) (int, error) {
 
 const insertQuery string = `
 INSERT INTO photos
-(id, file, ext, hash, phash, description, resolution,
-taken_at, uploaded_at, modified_at, subjects, tags)
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+(id, file, ext, hash, phash,
+description, source, subjects, tags,
+resolution, taken_at, uploaded_at, modified_at)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`
 
 // CreatePhoto Create a Photo entry in the database
 func (s *store) CreatePhoto(p *Photo) error {
@@ -247,8 +250,9 @@ func (s *store) CreatePhoto(p *Photo) error {
 
 const updateQuery = `
 UPDATE photos SET
-file = $2, ext = $3, hash = $4, phash = $5, description = $6, resolution = $7,
-taken_at = $8, uploaded_at = $9, modified_at = $10, subjects = $11, tags = $12)
+file = $2, ext = $3, hash = $4, phash = $5,
+description = $6, source = $7, subjects = $8, tags = $9,
+resolution = $10, taken_at = $11, uploaded_at = $12, modified_at = $13)
 WHERE id = $1`
 
 // UpdatePhoto Update a Photo in the database
@@ -595,7 +599,7 @@ func DeletePhoto(s PhotoService) http.HandlerFunc {
 	}
 }
 
-// GetPhotos - Get a list of photos
+// GetPhotos Get a list of photos
 func GetPhotos(s PhotoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		// var amount int

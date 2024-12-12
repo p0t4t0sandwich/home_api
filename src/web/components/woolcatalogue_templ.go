@@ -10,7 +10,7 @@ import "context"
 import "io"
 import "bytes"
 
-func WoolRoot() templ.Component {
+func WoolRoot(htmxSrc string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -23,7 +23,20 @@ func WoolRoot() templ.Component {
 			templ_7745c5c3_Var1 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Wool Catalogue</title><link rel=\"stylesheet\" href=\"/public/styles.css\"><script src=\"/public/htmx-v2.0.3.js\"></script></head><script>\n\t\tlet amount = 12;\n\t\tlet cursor = 0;\n\t\t</script><body class=\"bg-purple-200\"><!-- This is a dummy frame to prevent the page from reloading when a form is submitted --><iframe name=\"dummy-frame\" id=\"dummy-frame\" style=\"display: none;\"></iframe>")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<!doctype html><html lang=\"en\"><head><meta charset=\"UTF-8\"><title>Wool Catalogue</title><link rel=\"stylesheet\" href=\"/public/styles.css\"><script src=\"")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		var templ_7745c5c3_Var2 string
+		templ_7745c5c3_Var2, templ_7745c5c3_Err = templ.JoinStringErrs(htmxSrc)
+		if templ_7745c5c3_Err != nil {
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `src/web/components/woolcatalogue.templ`, Line: 10, Col: 24}
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var2))
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"></script></head><script>\n\t\tlet amount = 12;\n\t\tlet cursor = 0;\n\t\t</script><body class=\"bg-purple-200\"><!-- This is a dummy frame to prevent the page from reloading when a form is submitted --><iframe name=\"dummy-frame\" id=\"dummy-frame\" style=\"display: none;\"></iframe>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -66,9 +79,9 @@ func NavBar() templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var2 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var2 == nil {
-			templ_7745c5c3_Var2 = templ.NopComponent
+		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var3 == nil {
+			templ_7745c5c3_Var3 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex flex-row justify-center items-center bg-green-100 p-5 w-full h-16\"><p class=\"text-lg\">Wool Catalogue</p></div>")
@@ -90,9 +103,9 @@ func CreateWoolButton() templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var3 == nil {
-			templ_7745c5c3_Var3 = templ.NopComponent
+		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var4 == nil {
+			templ_7745c5c3_Var4 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"flex flex-col flex-row justify-center bg-green-100 p-5 m-5 text-lg shadow-xl rounded-lg\"><button class=\"bg-green-400 hover:bg-green-500 text-white font-bold py-2 px-4 rounded\" onclick=\"document.getElementById(&#39;add-new-wool-modal&#39;).hidden = false;\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"36\" height=\"36\" viewBox=\"0 0 24 24\"><path fill=\"white\" d=\"M12 21q-.425 0-.712-.288T11 20v-7H4q-.425 0-.712-.288T3 12t.288-.712T4 11h7V4q0-.425.288-.712T12 3t.713.288T13 4v7h7q.425 0 .713.288T21 12t-.288.713T20 13h-7v7q0 .425-.288.713T12 21\"></path></svg></button></div>")
@@ -114,9 +127,9 @@ func ModalFormFields() templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var4 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var4 == nil {
-			templ_7745c5c3_Var4 = templ.NopComponent
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"grid grid-cols-2 gap-4\"><div><label for=\"name\" class=\"block text-sm font-medium text-gray-700\">Name</label> <input type=\"text\" name=\"name\" id=\"name\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"brand\" class=\"block text-sm font-medium text-gray-700\">Brand</label> <input type=\"text\" name=\"brand\" id=\"brand\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"length\" class=\"block text-sm font-medium text-gray-700\">Length</label> <input type=\"text\" name=\"length\" id=\"length\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"weight\" class=\"block text-sm font-medium text-gray-700\">Weight</label> <input type=\"text\" name=\"weight\" id=\"weight\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"ply\" class=\"block text-sm font-medium text-gray-700\">Ply</label> <input type=\"text\" name=\"ply\" id=\"ply\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"needleSize\" class=\"block text-sm font-medium text-gray-700\">Needle Size</label> <input type=\"text\" name=\"needleSize\" id=\"needleSize\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"colour\" class=\"block text-sm font-medium text-gray-700\">Colour</label> <input type=\"text\" name=\"colour\" id=\"colour\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"composition\" class=\"block text-sm font-medium text-gray-700\">Composition</label> <input type=\"text\" name=\"composition\" id=\"composition\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"quantity\" class=\"block text-sm font-medium text-gray-700\">Quantity</label> <input type=\"text\" name=\"quantity\" id=\"quantity\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"partial\" class=\"block text-sm font-medium text-gray-700\">Partial</label> <input type=\"text\" name=\"partial\" id=\"partial\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div><div><label for=\"tags\" class=\"block text-sm font-medium text-gray-700\">Tags</label> <input type=\"text\" name=\"tags\" id=\"tags\" class=\"mt-1 p-2 block w-full shadow-sm sm:text-sm focus:ring-indigo-500 focus:border-indigo-500 border-gray-300 rounded-md\"></div></div>")
@@ -138,9 +151,9 @@ func AddNewWoolModal() templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var5 == nil {
-			templ_7745c5c3_Var5 = templ.NopComponent
+		templ_7745c5c3_Var6 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var6 == nil {
+			templ_7745c5c3_Var6 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"add-new-wool-modal\" hidden=\"hidden\" class=\"fixed z-10 inset-0 overflow-y-auto\"><div class=\"flex items center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0\"><div class=\"fixed inset-0 transition-opacity\" aria-hidden=\"true\"><div class=\"absolute inset-0 bg-gray-500 opacity-75\"></div></div><span class=\"hidden sm:inline-block sm:align-middle sm:h-screen\" aria-hidden=\"true\">&#8203;</span><div class=\"inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full\"><div class=\"bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4\"><div class=\"sm:flex sm:items-start\"><div class=\"mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left\"><h3 class=\"text-lg leading-6 font-medium text-gray-900\" id=\"modal-title\">Add New Wool</h3><div class=\"mt-2\"><form target=\"dummy-frame\" action=\"/api/v1/wool-catalogue/wool\" method=\"post\">")
@@ -170,9 +183,9 @@ func EditWoolModal() templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var6 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var6 == nil {
-			templ_7745c5c3_Var6 = templ.NopComponent
+		templ_7745c5c3_Var7 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var7 == nil {
+			templ_7745c5c3_Var7 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"edit-wool-modal\" hidden=\"hidden\" class=\"fixed z-10 inset-0 overflow-y-auto\"><div class=\"flex items center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0\"><div class=\"fixed inset-0 transition-opacity\" aria-hidden=\"true\"><div class=\"absolute inset-0 bg-gray-500 opacity-75\"></div></div><span class=\"hidden sm:inline-block sm:align-middle sm:h-screen\" aria-hidden=\"true\">&#8203;</span><div class=\"inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full\"><div class=\"bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4\"><div class=\"sm:flex sm:items-start\"><div class=\"mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left\"><h3 class=\"text-lg leading-6 font-medium text-gray-900\" id=\"modal-title\">Edit Wool</h3><div class=\"mt-2\"><form target=\"dummy-frame\" action=\"/api/v1/wool-catalogue/wool\" method=\"put\">")

@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"embed"
 	"home_api/src/api/modules/photodump"
 	"home_api/src/database"
 	"home_api/src/web/components"
@@ -21,8 +22,8 @@ func CreateStack(routers ...Router) Router {
 }
 
 // ApplyRoutes - Apply the routes to the Webserver
-func ApplyRoutes(mux *http.ServeMux) *http.ServeMux {
-	mux.Handle("/public/", http.StripPrefix("/public/", http.FileServer(http.Dir("public"))))
+func ApplyRoutes(mux *http.ServeMux, public embed.FS) *http.ServeMux {
+	mux.Handle("/public/", http.FileServer(http.FS(public)))
 
 	Home(mux)
 	PhotoDump(mux)
@@ -56,7 +57,7 @@ func WoolCatalogue(mux *http.ServeMux) *http.ServeMux {
 	// if err != nil {
 	// 	panic(err)
 	// }
-	// mux.Handle("GET /wool-catalogue", templ.Handler(components.WoolRoot()))
+	// mux.Handle("GET /wool-catalogue", templ.Handler(components.WoolRoot(database.S3_FILE_URI + "/cdn/htmx-v2.0.3.js"))
 	//
 	// mux.Handle("GET /api/v1/wool-catalogue/wool", woolcatalogue.GetWool(store))
 	// mux.Handle("POST /api/v1/wool-catalogue/wool", woolcatalogue.CreateWool(store))

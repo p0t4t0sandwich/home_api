@@ -1,13 +1,13 @@
 package components
 
-templ WoolRoot() {
+templ WoolRoot(htmxSrc string) {
 	<!DOCTYPE html>
 	<html lang="en">
 		<head>
 			<meta charset="UTF-8"/>
 			<title>Wool Catalogue</title>
 			<link rel="stylesheet" href="/public/styles.css"/>
-			<script src="/public/htmx-v2.0.3.js"></script>
+			<script src={ htmxSrc }></script>
 		</head>
 		<script>
 		let amount = 12;

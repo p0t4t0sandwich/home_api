@@ -15,7 +15,8 @@ import (
 	"github.com/rs/cors"
 )
 
-var static embed.FS
+//go:embed public/*
+var public embed.FS
 
 type LogWriter struct {
 	FileName string
@@ -62,7 +63,7 @@ func (s *WebServer) Setup() http.Handler {
 	)
 
 	router := routerStack(http.NewServeMux())
-	router = routes.ApplyRoutes(router)
+	router = routes.ApplyRoutes(router, public)
 	return middlewareStack(router)
 }
 

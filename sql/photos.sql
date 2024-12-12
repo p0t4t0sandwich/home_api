@@ -5,12 +5,13 @@ CREATE TABLE photos (
     hash TEXT NOT NULL,
     phash BYTEA NOT NULL,
     description TEXT,
+    source TEXT,
+    subjects TEXT[],
+    tags TEXT[],
     resolution TEXT,
     taken_at TIMESTAMP WITH TIME ZONE,
     uploaded_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    modified_at TIMESTAMP WITH TIME ZONE NOT NULL,
-    subjects TEXT[],
-    tags TEXT[]
+    modified_at TIMESTAMP WITH TIME ZONE NOT NULL
 );
 
 -- https://stackoverflow.com/questions/17739887/how-to-xor-md5-hash-values-and-cast-them-to-hex-in-postgresql
