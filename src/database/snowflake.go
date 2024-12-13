@@ -25,6 +25,7 @@ func initSnowflake() spaceflake.GeneratorSettings {
 	}
 	settings.NodeID = nodeID
 	workID, _ := strconv.ParseUint(os.Getenv("SNOWFLAKE_WORKER_ID"), 10, 64)
+
 	if err != nil {
 		workID = 1
 		log.Println("Failed to parse SNOWFLAKE_WORKER_ID, defaulting to 1")

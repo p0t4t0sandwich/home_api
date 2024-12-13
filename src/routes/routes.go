@@ -46,7 +46,7 @@ func PhotoDump(mux *http.ServeMux) *http.ServeMux {
 	mux.Handle("POST /api/v1/photo-dump/photo", photodump.UploadPhoto(s))
 	mux.Handle("PUT /api/v1/photo-dump/photo", photodump.UpdatePhoto(s))
 	mux.Handle("DELETE /api/v1/photo-dump/photo", photodump.DeletePhoto(s))
-	mux.Handle("GET /api/v1/photo-dump/photos", photodump.GetPhotos(s))
+	mux.Handle("GET /api/v1/photo-dump/photos", photodump.GetPhotos(s, components.Photos))
 	return mux
 }
 

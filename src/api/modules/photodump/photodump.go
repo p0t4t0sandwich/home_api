@@ -9,6 +9,7 @@ import (
 	"errors"
 	"home_api/src/database"
 	"home_api/src/responses"
+	"home_api/src/web"
 	"image"
 	"image/gif"
 	"image/jpeg"
@@ -634,13 +635,13 @@ func DeletePhoto(s PhotoService) http.HandlerFunc {
 			responses.SwitchCase(w, r, status, err.Error())
 			return
 		}
-		log.Println("Photo", id, "deleted successfully")
+		log.Println("photo", id, "deleted successfully")
 		responses.NoContent(w)
 	}
 }
 
 // GetPhotos Get a list of photos
-func GetPhotos(s PhotoService) http.HandlerFunc {
+func GetPhotos(s PhotoService, cw web.FuncWrapper[[]*Photo]) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var amount int
 		var err error
@@ -677,7 +678,7 @@ func GetPhotos(s PhotoService) http.HandlerFunc {
 		}
 
 		if r.Header.Get("Content-Type") == "" {
-			// responses.SendComponent(w, r, PhotoCards(photos))
+			responses.SendComponent(w, r, cw(photos))
 		} else {
 			responses.StructOK(w, r, photos)
 		}
