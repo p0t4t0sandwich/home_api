@@ -37,10 +37,8 @@ func Home(mux *http.ServeMux) *http.ServeMux {
 }
 
 func PhotoDump(mux *http.ServeMux) *http.ServeMux {
-	db := database.GetDB("home")
-	s3 := database.GetS3()
-	ps := photodump.NewStore(db, s3)
-	s := photodump.NewService(ps)
+	s := photodump.NewService(photodump.NewStore(
+		database.GetDB("home"), database.GetS3()))
 
 	mux.Handle("GET /photo-dump", templ.Handler(components.PhotoDumpRoot()))
 

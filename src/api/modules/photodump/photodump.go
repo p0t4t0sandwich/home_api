@@ -153,8 +153,19 @@ func (p *Photo) TagsString() []string {
 	return tags
 }
 
+// EnsureNonNil Ensures that the struct doesn't have nil fields with no defaults
+func (p *Photo) EnsureNonNil() {
+	if p.Subjects == nil {
+		p.Subjects = make([]string, 0)
+	}
+	if p.Tags == nil {
+		p.Tags = make([]Tags, 0)
+	}
+}
+
 // Unrwap Unwraps the Photo struct into an array of fields
 func (p *Photo) Unwrap() []any {
+	p.EnsureNonNil()
 	return []any{p.ID, p.File, p.Ext, p.Hash, p.PHash,
 		p.Description, p.Source, p.Subjects, p.Tags,
 		p.Resolution, p.TakenAt, p.UploadedAt, p.ModifiedAt}
@@ -166,10 +177,15 @@ func (p *Photo) Unwrap() []any {
 type PhotoStore interface {
 	GetPhotoById(id string) (*Photo, error)
 	GetPhotoByHash(hash string) (*Photo, error)
-	CountLikePhotos(phash []byte, hd int) (int, error)
 	CreatePhoto(photo *Photo) error
 	UpdatePhoto(photo *Photo) error
 	DeletePhoto(id string) error
+
+	CountLikePhotos(phash []byte, hd int) (int, error)
+	// GetLikePhotos(phash []byte, hd int, limit int) ([]*Photo, error)
+
+	GetPhotosByDate(start time.Time, end time.Time, amount int, cursor int) ([]*Photo, error)
+
 	UploadPhotoToS3(photo *Photo, r io.Reader, length int64, contentType string) error
 	DeletePhotoFromS3(photo *Photo) error
 }
@@ -192,12 +208,7 @@ func (s *store) GetPhotoById(id string) (*Photo, error) {
 	if err != nil {
 		return nil, err
 	}
-	if photo.Subjects == nil {
-		photo.Subjects = make([]string, 0)
-	}
-	if photo.Tags == nil {
-		photo.Tags = make([]Tags, 0)
-	}
+	photo.EnsureNonNil()
 	return photo, err
 }
 
@@ -208,28 +219,8 @@ func (s *store) GetPhotoByHash(hash string) (*Photo, error) {
 	if err != nil {
 		return nil, err
 	}
-	if photo.Subjects == nil {
-		photo.Subjects = make([]string, 0)
-	}
-	if photo.Tags == nil {
-		photo.Tags = make([]Tags, 0)
-	}
+	photo.EnsureNonNil()
 	return photo, err
-}
-
-const checkpHashQuery = `
-SELECT COUNT(*) FROM photos
-WHERE BIT_COUNT(xor_digests(phash, $1)) <= $2`
-
-// CountLikePhotos Return the number of similar photos
-func (s *store) CountLikePhotos(phash []byte, hd int) (int, error) {
-	// TODO: Compare rotated hashes? (90deg, 180deg)
-	var count int
-	err := s.db.QueryRow(context.Background(), checkpHashQuery, phash, hd).Scan(&count)
-	if err != nil {
-		return 0, err
-	}
-	return count, nil
 }
 
 const insertQuery string = `
@@ -274,6 +265,42 @@ func (s *store) DeletePhoto(id string) error {
 	return nil
 }
 
+const checkpHashQuery = `
+SELECT COUNT(*) FROM photos
+WHERE BIT_COUNT(xor_digests(phash, $1)) <= $2`
+
+// CountLikePhotos Return the number of similar photos
+func (s *store) CountLikePhotos(phash []byte, hd int) (int, error) {
+	// TODO: Compare rotated hashes? (90deg, 180deg)
+	var count int
+	err := s.db.QueryRow(context.Background(), checkpHashQuery, phash, hd).Scan(&count)
+	if err != nil {
+		return 0, err
+	}
+	return count, nil
+}
+
+const getPhotosByTimeTakenQuery = `
+SELECT * FROM photos
+WHERE taken_at BETWEEN $1 AND $2
+ORDER BY taken_at DESC
+LIMIT $3 OFFSET $4`
+
+// GetPhotosByDate Get a list of photos based on the time taken
+func (s *store) GetPhotosByDate(start time.Time, end time.Time, amount int, cursor int) ([]*Photo, error) {
+	// var photos []*Photo = make([]*Photo, amount)
+	rows, err := s.db.Query(context.Background(),
+		getPhotosByTimeTakenQuery, start, end, amount, amount*cursor)
+	if err != nil {
+		return nil, err
+	}
+	photos, err := pgx.CollectRows(rows, pgx.RowToAddrOfStructByName[Photo])
+	if err != nil {
+		return nil, err
+	}
+	return photos, nil
+}
+
 // UploadPhotoToS3 Upload a photo to S3
 func (s *store) UploadPhotoToS3(photo *Photo, r io.Reader, length int64, contentType string) error {
 	_, err := s.s3.PutObject(
@@ -306,6 +333,8 @@ type PhotoService interface {
 	UploadPhoto(photo *Photo, file *os.File) (int, error)
 	EditPhoto(photo *Photo) (int, error)
 	SafeDeletePhoto(id string, confirm string) (int, error)
+
+	GetPhotosByDate(start time.Time, end time.Time, amount int, cursor int) ([]*Photo, int, error)
 }
 
 // service Private PhotoService implementation
@@ -351,6 +380,7 @@ func (s *service) UploadPhoto(photo *Photo, file *os.File) (int, error) {
 		return http.StatusInternalServerError, errors.New("could not generate id")
 	}
 	photo.ID = id
+	photo.UploadedAt = time.Now()
 
 	bs, err := io.ReadAll(file)
 	if err != nil && err != io.EOF {
@@ -462,6 +492,16 @@ func (s *service) SafeDeletePhoto(id string, confirm string) (int, error) {
 		return http.StatusInternalServerError, errors.New("could not delete photo")
 	}
 	return http.StatusNoContent, nil
+}
+
+// GetPhotosByDate Get photos based on the timestamps provided, with pagination
+func (s *service) GetPhotosByDate(start time.Time, end time.Time, amount int, cursor int) ([]*Photo, int, error) {
+	photos, err := s.ps.GetPhotosByDate(start, end, amount, cursor-1)
+	if err != nil {
+		log.Println("could not get photos in the specified time range", err)
+		return nil, http.StatusInternalServerError, errors.New("could not get photos in the specified time range")
+	}
+	return photos, http.StatusOK, nil
 }
 
 // ------------------- Functions -------------------
@@ -602,46 +642,44 @@ func DeletePhoto(s PhotoService) http.HandlerFunc {
 // GetPhotos Get a list of photos
 func GetPhotos(s PhotoService) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		// var amount int
-		// var err error
-		// strAmount := r.URL.Query().Get("amount")
-		// if strAmount == "" {
-		// 	amount = 12
-		// } else {
-		// 	amount, err = strconv.Atoi(strAmount)
-		// 	if err != nil {
-		// 		log.Println("Invalid amount", err)
-		// 		responses.BadRequest(w, r, "Invalid amount")
-		// 		return
-		// 	}
-		// }
-		// var cursor int
-		// strCursor := r.URL.Query().Get("cursor")
-		// if strCursor == "" {
-		// 	cursor = 0
-		// } else {
-		// 	cursor, err = strconv.Atoi(strCursor)
-		// 	if err != nil {
-		// 		log.Println("Invalid cursor", err)
-		// 		responses.BadRequest(w, r, "Invalid cursor")
-		// 		return
-		// 	}
-		// }
-		// var photos []Photo
-		// if cursor >= len(s.photos) {
-		// 	responses.BadRequest(w, r, "Invalid cursor")
-		// 	return
-		// }
-		// for i := cursor; i < cursor+amount; i++ {
-		// 	if i >= len(s.photos) {
-		// 		break
-		// 	}
-		// 	photos = append(photos, s.photos[i])
-		// }
-		// if r.Header.Get("Content-Type") == "" {
-		// 	// responses.SendComponent(w, r, PhotoCards(photos))
-		// } else {
-		// 	responses.StructOK(w, r, photos)
-		// }
+		var amount int
+		var err error
+		strAmount := r.URL.Query().Get("amount")
+		if strAmount == "" {
+			amount = 12
+		} else {
+			amount, err = strconv.Atoi(strAmount)
+			if err != nil {
+				log.Println("invalid amount", err)
+				responses.BadRequest(w, r, "invalid amount")
+				return
+			}
+		}
+		var cursor int
+		strCursor := r.URL.Query().Get("cursor")
+		if strCursor == "" {
+			cursor = 1
+		} else {
+			cursor, err = strconv.Atoi(strCursor)
+			if err != nil {
+				log.Println("invalid cursor", err)
+				responses.BadRequest(w, r, "invalid cursor")
+				return
+			}
+		}
+
+		start := time.Date(2014, 0, 0, 0, 00, 0, 0, time.UTC)
+		photos, status, err := s.GetPhotosByDate(
+			start, time.Now(), amount, cursor)
+		if err != nil {
+			responses.SwitchCase(w, r, status, err.Error())
+			return
+		}
+
+		if r.Header.Get("Content-Type") == "" {
+			// responses.SendComponent(w, r, PhotoCards(photos))
+		} else {
+			responses.StructOK(w, r, photos)
+		}
 	}
 }
