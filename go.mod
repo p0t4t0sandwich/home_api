@@ -2,6 +2,8 @@ module home_api
 
 go 1.23.4
 
+replace github.com/chai2010/webp => github.com/chirino/webp v0.0.0-20240906184250-8b3bed1ecc92
+
 require (
 	github.com/a-h/templ v0.2.793
 	github.com/chai2010/webp v1.1.1
