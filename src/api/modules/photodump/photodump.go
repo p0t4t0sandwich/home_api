@@ -669,7 +669,7 @@ func GetPhotos(s PhotoService, cw web.FuncWrapper[[]*Photo]) http.HandlerFunc {
 			}
 		}
 
-		start := time.Date(2014, 0, 0, 0, 00, 0, 0, time.UTC)
+		start := time.Date(2014, 0, 0, 0, 0, 0, 0, time.UTC)
 		photos, status, err := s.GetPhotosByDate(
 			start, time.Now(), amount, cursor)
 		if err != nil {

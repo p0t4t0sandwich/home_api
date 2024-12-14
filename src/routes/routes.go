@@ -40,7 +40,7 @@ func PhotoDump(mux *http.ServeMux) *http.ServeMux {
 	s := photodump.NewService(photodump.NewStore(
 		database.GetDB("home"), database.GetS3()))
 
-	mux.Handle("GET /photo-dump", templ.Handler(components.PhotoDumpRoot()))
+	mux.Handle("GET /photo-dump", templ.Handler(components.PhotoDumpRoot(database.S3_FILE_URI+"/cdn/htmx-v2.0.3.js")))
 
 	mux.Handle("GET /api/v1/photo-dump/photo", photodump.GetPhoto(s))
 	mux.Handle("POST /api/v1/photo-dump/photo", photodump.UploadPhoto(s))
