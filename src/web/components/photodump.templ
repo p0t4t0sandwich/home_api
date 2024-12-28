@@ -20,7 +20,7 @@ templ PhotoDumpRoot(htmxSrc string) {
             <iframe name="dummy-frame" id="dummy-frame" style="display: none;"></iframe>
             <div
                 id="photos"
-                hx-get="/api/v1/photo-dump/photos"
+                hx-get="/photo-dump/photos"
                 hx-vals="js:{amount: amount, cursor: cursor}"
                 hx-trigger="load"
                 hx-target="#photos"

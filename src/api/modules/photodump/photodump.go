@@ -641,46 +641,59 @@ func DeletePhoto(s PhotoService) http.HandlerFunc {
 }
 
 // GetPhotos Get a list of photos
-func GetPhotos(s PhotoService, cw web.FuncWrapper[[]*Photo]) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		var amount int
-		var err error
-		strAmount := r.URL.Query().Get("amount")
-		if strAmount == "" {
-			amount = 12
-		} else {
-			amount, err = strconv.Atoi(strAmount)
-			if err != nil {
-				log.Println("invalid amount", err)
-				responses.BadRequest(w, r, "invalid amount")
-				return
-			}
-		}
-		var cursor int
-		strCursor := r.URL.Query().Get("cursor")
-		if strCursor == "" {
-			cursor = 1
-		} else {
-			cursor, err = strconv.Atoi(strCursor)
-			if err != nil {
-				log.Println("invalid cursor", err)
-				responses.BadRequest(w, r, "invalid cursor")
-				return
-			}
-		}
-
-		start := time.Date(2014, 0, 0, 0, 0, 0, 0, time.UTC)
-		photos, status, err := s.GetPhotosByDate(
-			start, time.Now(), amount, cursor)
+func GetPhotos(s PhotoService, w http.ResponseWriter, r *http.Request) ([]*Photo, error) {
+	var amount int
+	var err error
+	strAmount := r.URL.Query().Get("amount")
+	if strAmount == "" {
+		amount = 12
+	} else {
+		amount, err = strconv.Atoi(strAmount)
 		if err != nil {
-			responses.SwitchCase(w, r, status, err.Error())
+			log.Println("invalid amount", err)
+			responses.BadRequest(w, r, "invalid amount")
+			return nil, err
+		}
+	}
+	var cursor int
+	strCursor := r.URL.Query().Get("cursor")
+	if strCursor == "" {
+		cursor = 1
+	} else {
+		cursor, err = strconv.Atoi(strCursor)
+		if err != nil {
+			log.Println("invalid cursor", err)
+			responses.BadRequest(w, r, "invalid cursor")
+			return nil, err
+		}
+	}
+
+	start := time.Date(2014, 0, 0, 0, 0, 0, 0, time.UTC)
+	photos, status, err := s.GetPhotosByDate(
+		start, time.Now(), amount, cursor)
+	if err != nil {
+		responses.SwitchCase(w, r, status, err.Error())
+		return nil, err
+	}
+	return photos, nil
+}
+
+func GetPhotosJSON(s PhotoService) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		photos, err := GetPhotos(s, w, r)
+		if err != nil {
 			return
 		}
+		responses.StructOK(w, r, photos)
+	}
+}
 
-		if r.Header.Get("Content-Type") == "" {
-			responses.SendComponent(w, r, cw(photos))
-		} else {
-			responses.StructOK(w, r, photos)
+func GetPhotosHTML(s PhotoService, cw web.FuncWrapper[[]*Photo]) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		photos, err := GetPhotos(s, w, r)
+		if err != nil {
+			return
 		}
+		responses.SendComponent(w, r, cw(photos))
 	}
 }

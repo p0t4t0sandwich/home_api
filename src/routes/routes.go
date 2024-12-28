@@ -41,12 +41,13 @@ func PhotoDump(mux *http.ServeMux) *http.ServeMux {
 		database.GetDB("home"), database.GetS3()))
 
 	mux.Handle("GET /photo-dump", templ.Handler(components.PhotoDumpRoot(database.S3_FILE_URI+"/cdn/htmx-v2.0.3.js")))
+	mux.Handle("GET /photo-dump/photos", photodump.GetPhotosHTML(s, components.Photos))
 
 	mux.Handle("GET /api/v1/photo-dump/photo", photodump.GetPhoto(s))
 	mux.Handle("POST /api/v1/photo-dump/photo", photodump.UploadPhoto(s))
 	mux.Handle("PUT /api/v1/photo-dump/photo", photodump.UpdatePhoto(s))
 	mux.Handle("DELETE /api/v1/photo-dump/photo", photodump.DeletePhoto(s))
-	mux.Handle("GET /api/v1/photo-dump/photos", photodump.GetPhotos(s, components.Photos))
+	mux.Handle("GET /api/v1/photo-dump/photos", photodump.GetPhotosJSON(s))
 	return mux
 }
 
